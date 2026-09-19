@@ -20,9 +20,14 @@ import {
   RefreshCw,
   FolderOpen,
   DollarSign,
+  Download,
+  FileCheck,
+  Paperclip,
+  Share2,
 } from 'lucide-react';
 import { Client, HistoryRecord } from '../types';
 import { db } from '../services/db';
+import { downloadInvoicePdf, downloadInvoicesZip, shareInvoicePdfOrZip } from '../services/pdfGenerator';
 
 export const SendInvoicesPage: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -525,23 +530,37 @@ export const SendInvoicesPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="text-right shrink-0">
-                        <span className="font-mono font-bold text-emerald-700 block">
-                          {formatCurrency(record.invoiceValue)}
-                        </span>
-                        <div className="flex items-center justify-end gap-1 mt-0.5">
-                          {record.sentWhatsappAt && (
-                            <span
-                              title={`Enviado via WhatsApp em ${new Date(record.sentWhatsappAt).toLocaleDateString()}`}
-                              className="w-2 h-2 rounded-full bg-emerald-500"
-                            />
-                          )}
-                          {record.sentEmailAt && (
-                            <span
-                              title={`Enviado via E-mail em ${new Date(record.sentEmailAt).toLocaleDateString()}`}
-                              className="w-2 h-2 rounded-full bg-blue-500"
-                            />
-                          )}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadInvoicePdf(record);
+                          }}
+                          title="Baixar arquivo PDF desta nota"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+
+                        <div className="text-right">
+                          <span className="font-mono font-bold text-emerald-700 block">
+                            {formatCurrency(record.invoiceValue)}
+                          </span>
+                          <div className="flex items-center justify-end gap-1 mt-0.5">
+                            {record.sentWhatsappAt && (
+                              <span
+                                title={`Enviado via WhatsApp em ${new Date(record.sentWhatsappAt).toLocaleDateString()}`}
+                                className="w-2 h-2 rounded-full bg-emerald-500"
+                              />
+                            )}
+                            {record.sentEmailAt && (
+                              <span
+                                title={`Enviado via E-mail em ${new Date(record.sentEmailAt).toLocaleDateString()}`}
+                                className="w-2 h-2 rounded-full bg-blue-500"
+                              />
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -561,43 +580,119 @@ export const SendInvoicesPage: React.FC = () => {
         <div className="lg:col-span-7 space-y-4">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
             {/* Action Bar Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 {activeChannel === 'whatsapp' ? (
-                  <MessageSquare className="w-5 h-5 text-emerald-600" />
+                  <MessageSquare className="w-5 h-5 text-emerald-600 shrink-0" />
                 ) : (
-                  <Mail className="w-5 h-5 text-blue-600" />
+                  <Mail className="w-5 h-5 text-blue-600 shrink-0" />
                 )}
                 <div>
                   <h2 className="text-sm font-bold text-slate-900">
-                    Pré-visualização da Mensagem ({activeChannel === 'whatsapp' ? 'WhatsApp' : 'E-mail'})
+                    Pré-visualização e Anexo ({activeChannel === 'whatsapp' ? 'WhatsApp' : 'E-mail'})
                   </h2>
                   <p className="text-[11px] text-slate-500">
-                    A mensagem abaixo será pré-formatada e pronta para envio.
+                    Mensagem pré-formatada + download direto do arquivo PDF/ZIP.
                   </p>
                 </div>
               </div>
 
-              {/* Quick Channel Actions */}
-              {activeChannel === 'whatsapp' ? (
+              {/* Quick Channel & Download Actions */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
-                  onClick={handleOpenWhatsapp}
-                  id="btn-send-whatsapp-main"
-                  className="px-5 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all"
+                  onClick={async () => {
+                    const list = selectedRecords.length > 0 ? selectedRecords : activeRecords;
+                    if (list.length === 0) {
+                      alert('Nenhuma nota selecionada.');
+                      return;
+                    }
+                    const bundleName = targetClient ? targetClient.customName : 'Notas_Fiscais';
+                    const msgText = generateFormattedMessage(activeChannel === 'whatsapp' ? 'whatsapp' : 'email_body');
+                    const shared = await shareInvoicePdfOrZip(list, bundleName, msgText);
+                    if (shared) {
+                      setCopiedSuccess('Arquivo compartilhado com sucesso!');
+                      setTimeout(() => setCopiedSuccess(null), 3000);
+                    } else {
+                      // Fallback: download PDF/ZIP and alert
+                      if (list.length === 1) {
+                        downloadInvoicePdf(list[0]);
+                      } else {
+                        await downloadInvoicesZip(list, bundleName);
+                      }
+                      alert(
+                        'O arquivo PDF/ZIP foi baixado! Agora abra o WhatsApp/E-mail e selecione este arquivo baixado como anexo.'
+                      );
+                    }
+                  }}
+                  title="Compartilha o arquivo PDF/ZIP diretamente no aplicativo (WhatsApp, E-mail, etc)"
+                  className="px-3.5 py-2 rounded-xl font-bold text-xs bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all"
                 >
-                  <Send className="w-4 h-4" />
-                  <span>Enviar no WhatsApp</span>
+                  <Share2 className="w-4 h-4" />
+                  <span>Compartilhar Arquivo Direto</span>
                 </button>
-              ) : (
+
                 <button
-                  onClick={handleOpenEmail}
-                  id="btn-send-email-main"
-                  className="px-5 py-2.5 rounded-xl font-bold text-xs bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all"
+                  onClick={async () => {
+                    const list = selectedRecords.length > 0 ? selectedRecords : activeRecords;
+                    if (list.length === 1) {
+                      downloadInvoicePdf(list[0]);
+                    } else if (list.length > 1) {
+                      const name = targetClient ? targetClient.customName : 'Clientes';
+                      await downloadInvoicesZip(list, name);
+                    } else {
+                      alert('Nenhuma nota selecionada para baixar.');
+                    }
+                  }}
+                  title="Baixar arquivos de notas selecionadas em PDF ou ZIP"
+                  className="px-3.5 py-2 rounded-xl font-bold text-xs bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-300 flex items-center gap-1.5 transition-all"
                 >
-                  <Send className="w-4 h-4" />
-                  <span>Enviar por E-mail</span>
+                  <Download className="w-4 h-4 text-slate-600" />
+                  <span>
+                    {(selectedRecords.length > 0 ? selectedRecords : activeRecords).length > 1
+                      ? 'Baixar ZIP de Notas'
+                      : 'Baixar PDF da Nota'}
+                  </span>
                 </button>
-              )}
+
+                {activeChannel === 'whatsapp' ? (
+                  <button
+                    onClick={handleOpenWhatsapp}
+                    id="btn-send-whatsapp-main"
+                    className="px-4 py-2 rounded-xl font-bold text-xs bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>Enviar Texto no WhatsApp</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleOpenEmail}
+                    id="btn-send-email-main"
+                    className="px-4 py-2 rounded-xl font-bold text-xs bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>Enviar Texto por E-mail</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Attachment Instructions Banner */}
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1.5">
+              <div className="flex items-center gap-2 font-bold text-amber-950">
+                <Paperclip className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>Como enviar os arquivos PDF anexados junto com a mensagem:</span>
+              </div>
+              <ol className="list-decimal list-inside text-[11px] leading-relaxed text-amber-800 font-medium space-y-0.5">
+                <li>
+                  Clique em <strong>"Baixar PDF da Nota"</strong> (ou ZIP) para salvar o arquivo original organizado no seu computador.
+                </li>
+                <li>
+                  Clique no botão <strong>"Enviar no {activeChannel === 'whatsapp' ? 'WhatsApp' : 'E-mail'}"</strong> para abrir o app com o texto pronto.
+                </li>
+                <li>
+                  No WhatsApp/E-mail, clique no ícone de <strong>clipe / anexo</strong> e selecione o PDF que você acabou de baixar!
+                </li>
+              </ol>
             </div>
 
             {/* Email Subject Line (If Email active) */}
