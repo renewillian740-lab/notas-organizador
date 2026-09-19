@@ -1,4 +1,3 @@
-import JSZip from 'jszip';
 import { ExtractedInvoiceData, AppSettings } from '../types';
 
 /**
@@ -133,6 +132,7 @@ export async function createOrganizedZipArchive(
     finalFileName: string;
   }>
 ): Promise<Blob> {
+  const { default: JSZip } = await import('jszip');
   const zip = new JSZip();
 
   for (const item of items) {

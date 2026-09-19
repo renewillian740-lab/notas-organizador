@@ -1,15 +1,24 @@
-import * as pdfjsLib from 'pdfjs-dist';
 import { ExtractedInvoiceData, CandidateClient, EntityInfo, IdentificationMethod } from '../types';
 import { extractAllCNPJsFromText, formatCNPJ, isValidCNPJ, cleanCNPJ } from '../utils/cnpjValidator';
 import { db } from './db';
 
-// Configuração segura do worker do PDF.js
-try {
-  if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '4.10.38'}/pdf.worker.min.mjs`;
+// Lazy loading do módulo pdfjs-dist sob demanda
+let pdfjsLibPromise: Promise<typeof import('pdfjs-dist')> | null = null;
+
+async function getPdfJs() {
+  if (!pdfjsLibPromise) {
+    pdfjsLibPromise = import('pdfjs-dist').then((pdfjs) => {
+      try {
+        if (typeof window !== 'undefined' && !pdfjs.GlobalWorkerOptions.workerSrc) {
+          pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version || '4.10.38'}/pdf.worker.min.mjs`;
+        }
+      } catch (e) {
+        console.warn('Configurando worker PDF:', e);
+      }
+      return pdfjs;
+    });
   }
-} catch (e) {
-  console.warn('Configurando worker PDF:', e);
+  return pdfjsLibPromise;
 }
 
 const MONTH_NAMES = [
@@ -29,6 +38,7 @@ const MONTH_NAMES = [
 
 export async function extractTextFromPDF(file: File): Promise<{ text: string; pageCount: number }> {
   try {
+    const pdfjsLib = await getPdfJs();
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
     const pdfDoc = await loadingTask.promise;
