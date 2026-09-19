@@ -801,6 +801,72 @@ app.delete('/api/clients/:id', async (req, res) => {
   res.json({ success: true });
 });
 
+// ==========================================
+// 5. ROTA DE RESET GERAL DO SISTEMA (ZERAR TUDO)
+// ==========================================
+app.post('/api/system/reset-all', async (req, res) => {
+  const { clearHistory = true, clearClients = false, clearStorage = true } = req.body || {};
+
+  if (clearHistory) {
+    localInvoicesDb.length = 0;
+  }
+  if (clearClients) {
+    localClientsDb.length = 0;
+  }
+  localPdfFallback.clear();
+
+  const supabase = getSupabase();
+  const bucketName = getBucketName();
+  let deletedFilesCount = 0;
+
+  if (supabase) {
+    try {
+      if (clearHistory) {
+        await supabase.from('invoices').delete().neq('id', '__keep_none__');
+      }
+      if (clearClients) {
+        await supabase.from('clients').delete().neq('id', '__keep_none__');
+      }
+
+      if (clearStorage) {
+        const { data: rootFiles } = await supabase.storage.from(bucketName).list('', { limit: 100 });
+        if (rootFiles && rootFiles.length > 0) {
+          const directFiles = rootFiles.filter((f) => !f.id && f.name).map((f) => f.name);
+          if (directFiles.length > 0) {
+            await supabase.storage.from(bucketName).remove(directFiles);
+            deletedFilesCount += directFiles.length;
+          }
+        }
+
+        // Limpeza de pastas nfs/
+        const currentYear = new Date().getFullYear().toString();
+        const { data: months } = await supabase.storage.from(bucketName).list(`nfs/${currentYear}`);
+        if (months && months.length > 0) {
+          for (const m of months) {
+            const { data: mFiles } = await supabase.storage.from(bucketName).list(`nfs/${currentYear}/${m.name}`);
+            if (mFiles && mFiles.length > 0) {
+              const paths = mFiles.map((f) => `nfs/${currentYear}/${m.name}/${f.name}`);
+              await supabase.storage.from(bucketName).remove(paths);
+              deletedFilesCount += paths.length;
+            }
+          }
+        }
+      }
+    } catch (e: any) {
+      console.warn('Aviso durante reset no Supabase:', e.message);
+    }
+  }
+
+  return res.json({
+    success: true,
+    message: 'Sistema zerado com sucesso.',
+    clearedHistory: clearHistory,
+    clearedClients: clearClients,
+    clearedStorage: clearStorage,
+    deletedFilesCount,
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({

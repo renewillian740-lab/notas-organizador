@@ -24,6 +24,9 @@ const SettingsPage = lazy(() =>
 const InvoiceDetailModal = lazy(() =>
   import('./components/InvoiceDetailModal').then((m) => ({ default: m.InvoiceDetailModal }))
 );
+const ResetModal = lazy(() =>
+  import('./components/ResetModal').then((m) => ({ default: m.ResetModal }))
+);
 
 function PageLoadingFallback() {
   return (
@@ -49,6 +52,7 @@ export default function App() {
   const [recentHistory, setRecentHistory] = useState<HistoryRecord[]>([]);
 
   const [selectedDetailRecord, setSelectedDetailRecord] = useState<HistoryRecord | null>(null);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   const refreshGlobalState = () => {
     const clients = db.getClients();
@@ -69,28 +73,6 @@ export default function App() {
     Promise.all([db.fetchRemoteClients(), db.fetchRemoteHistory()]).then(() => {
       refreshGlobalState();
     });
-
-    // Se não houver clientes cadastrados no primeiro acesso, insere exemplo conceitual
-    const existing = db.getClients();
-    if (existing.length === 0) {
-      db.addOrUpdateClient({
-        cnpj: '55.573.511/0001-00',
-        customName: 'GUILHERME DOS SANTOS ARAGAO',
-        razaoSocial: 'GUILHERME DOS SANTOS ARAGAO',
-      });
-      db.addOrUpdateClient({
-        cnpj: '04.252.011/0001-10',
-        customName: 'ACME LOGISTICA',
-        razaoSocial: 'ACME LOGISTICA E DISTRIBUICAO S.A.',
-        nomeFantasia: 'ACME LOG',
-      });
-      db.addOrUpdateClient({
-        cnpj: '33.453.650/0001-09',
-        customName: 'NOVA ERA ENGENHARIA',
-        razaoSocial: 'NOVA ERA ENGENHARIA E CONSTRUCOES LTDA',
-      });
-      refreshGlobalState();
-    }
   }, []);
 
   return (
@@ -99,6 +81,7 @@ export default function App() {
       <Sidebar
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
+        onOpenResetModal={() => setIsResetModalOpen(true)}
         pendingReviewCount={pendingLifetime}
         clientsCount={clientsCount}
         historyCount={historyCount}
@@ -133,11 +116,15 @@ export default function App() {
           {currentTab === 'history' && (
             <HistoryPage
               onViewInvoiceDetails={(item) => setSelectedDetailRecord(item)}
+              onOpenResetModal={() => setIsResetModalOpen(true)}
             />
           )}
 
           {currentTab === 'settings' && (
-            <SettingsPage onSettingsSaved={refreshGlobalState} />
+            <SettingsPage
+              onSettingsSaved={refreshGlobalState}
+              onOpenResetModal={() => setIsResetModalOpen(true)}
+            />
           )}
         </Suspense>
       </main>
@@ -148,6 +135,19 @@ export default function App() {
           <InvoiceDetailModal
             item={selectedDetailRecord}
             onClose={() => setSelectedDetailRecord(null)}
+          />
+        </Suspense>
+      )}
+
+      {/* Reset Modal Global */}
+      {isResetModalOpen && (
+        <Suspense fallback={null}>
+          <ResetModal
+            isOpen={isResetModalOpen}
+            onClose={() => setIsResetModalOpen(false)}
+            onResetComplete={() => {
+              refreshGlobalState();
+            }}
           />
         </Suspense>
       )}

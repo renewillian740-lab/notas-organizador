@@ -20,17 +20,20 @@ import {
   Copy,
   Terminal,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import { AppSettings, SupabaseStatusResult } from '../types';
 import { db, DEFAULT_SETTINGS } from '../services/db';
 import { useTheme, ThemeMode } from '../context/ThemeContext';
 import { storageService } from '../services/storageService';
+import { ResetModal } from './ResetModal';
 
 interface SettingsPageProps {
   onSettingsSaved: () => void;
+  onOpenResetModal?: () => void;
 }
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved, onOpenResetModal }) => {
   const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -39,6 +42,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
   const [sqlSchema, setSqlSchema] = useState<string>('');
   const [copiedSql, setCopiedSql] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   const fetchStatusAndSchema = async () => {
     setLoadingStatus(true);
@@ -593,6 +597,40 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
           </label>
         </div>
       </div>
+
+      {/* Card: Zona de Perigo / Zerar Tudo */}
+      <div className="p-6 bg-rose-50/50 dark:bg-rose-950/20 rounded-2xl border border-rose-200 dark:border-rose-900/60 shadow-xs space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-bold text-rose-900 dark:text-rose-200 flex items-center gap-2 uppercase tracking-wider">
+              <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400" /> Zona de Perigo / Zerar Tudo
+            </h2>
+            <p className="text-xs text-rose-700/80 dark:text-rose-300/80 leading-relaxed mt-1">
+              Limpe instantaneamente todas as notas fiscais processadas, histórico, arquivos do Supabase Storage e cadastros do sistema.
+            </p>
+          </div>
+
+          <button
+            id="btn-settings-open-reset-all"
+            type="button"
+            onClick={() => (onOpenResetModal ? onOpenResetModal() : setIsResetModalOpen(true))}
+            className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs font-bold transition-all shadow-md shadow-rose-600/20 flex items-center gap-2 shrink-0 cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Zerar Tudo</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Reset Modal */}
+      <ResetModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        onResetComplete={() => {
+          onSettingsSaved();
+          fetchStatusAndSchema();
+        }}
+      />
     </div>
   );
 };

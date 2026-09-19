@@ -22,9 +22,13 @@ import { PdfViewerModal } from './PdfViewerModal';
 
 interface HistoryPageProps {
   onViewInvoiceDetails: (record: HistoryRecord) => void;
+  onOpenResetModal?: () => void;
 }
 
-export const HistoryPage: React.FC<HistoryPageProps> = ({ onViewInvoiceDetails }) => {
+export const HistoryPage: React.FC<HistoryPageProps> = ({
+  onViewInvoiceDetails,
+  onOpenResetModal,
+}) => {
   const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
@@ -167,11 +171,17 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onViewInvoiceDetails }
           </button>
           <button
             id="btn-clear-history"
-            onClick={handleClearHistory}
+            onClick={() => {
+              if (onOpenResetModal) {
+                onOpenResetModal();
+              } else {
+                handleClearHistory();
+              }
+            }}
             disabled={history.length === 0}
             className="px-3.5 py-2 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold disabled:opacity-40 transition-colors flex items-center gap-1.5 cursor-pointer"
           >
-            <Trash2 className="w-4 h-4" /> Limpar
+            <Trash2 className="w-4 h-4" /> Zerar Tudo
           </button>
         </div>
       </div>

@@ -11,12 +11,14 @@ import {
   Moon,
   Monitor,
   Send,
+  Trash2,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 interface SidebarProps {
   currentTab: 'dashboard' | 'process' | 'send' | 'clients' | 'history' | 'settings';
   onSelectTab: (tab: 'dashboard' | 'process' | 'send' | 'clients' | 'history' | 'settings') => void;
+  onOpenResetModal?: () => void;
   pendingReviewCount: number;
   clientsCount: number;
   historyCount: number;
@@ -25,6 +27,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   currentTab,
   onSelectTab,
+  onOpenResetModal,
   pendingReviewCount,
   clientsCount,
   historyCount,
@@ -166,17 +169,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Safety & Integrity Guarantee Footer */}
-      <div className="p-4 mx-4 mb-4 rounded-xl bg-slate-800/70 border border-slate-700/50">
+      <div className="p-3.5 mx-4 mb-2 rounded-xl bg-slate-800/70 border border-slate-700/50">
         <div className="flex items-start gap-2.5">
           <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-semibold text-slate-200">Arquivos Originais Intactos</p>
             <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-              O sistema nunca modifica ou apaga os PDFs de origem. Sempre opera com cópias seguras.
+              O sistema nunca modifica ou apaga os PDFs de origem.
             </p>
           </div>
         </div>
       </div>
+
+      {/* Botão para Zerar Tudo */}
+      {onOpenResetModal && (
+        <div className="px-4 mb-4">
+          <button
+            type="button"
+            id="sidebar-btn-reset-all"
+            onClick={onOpenResetModal}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-rose-900/50 bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 hover:text-rose-100 text-xs font-bold transition-colors cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Zerar Tudo</span>
+          </button>
+        </div>
+      )}
     </aside>
   );
 };

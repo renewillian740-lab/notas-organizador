@@ -338,6 +338,61 @@ class DBService {
       return false;
     }
   }
+
+  // ===================== RESET GERAL DO SISTEMA (ZERAR TUDO) =====================
+
+  public async resetAllSystemData(options?: {
+    clearHistory?: boolean;
+    clearClients?: boolean;
+    resetSettings?: boolean;
+    clearStorage?: boolean;
+  }): Promise<{ success: boolean; message: string }> {
+    const opts = {
+      clearHistory: true,
+      clearClients: true,
+      resetSettings: false,
+      clearStorage: true,
+      ...options,
+    };
+
+    try {
+      if (opts.clearHistory) {
+        localStorage.removeItem(HISTORY_STORAGE_KEY);
+      }
+      if (opts.clearClients) {
+        localStorage.removeItem(CLIENTS_STORAGE_KEY);
+      }
+      if (opts.resetSettings) {
+        localStorage.removeItem(SETTINGS_STORAGE_KEY);
+      }
+
+      // Comunica ao servidor backend para limpar Supabase e caches em memória
+      const response = await fetch('/api/system/reset-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clearHistory: opts.clearHistory,
+          clearClients: opts.clearClients,
+          clearStorage: opts.clearStorage,
+        }),
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        return {
+          success: true,
+          message: json.message || 'Sistema e arquivos foram zerados com sucesso.',
+        };
+      }
+    } catch (e: any) {
+      console.warn('Aviso durante reset:', e);
+    }
+
+    return {
+      success: true,
+      message: 'Dados locais e caches foram zerados com sucesso.',
+    };
+  }
 }
 
 export const db = new DBService();
