@@ -8,17 +8,16 @@ import {
   Building2,
   CheckCircle2,
   X,
-  FileSpreadsheet,
-  Download,
-  Upload,
   AlertCircle,
+  DollarSign,
 } from 'lucide-react';
-import { Client } from '../types';
+import { Client, HistoryRecord } from '../types';
 import { db } from '../services/db';
 import { formatCNPJ, cleanCNPJ, isValidCNPJ } from '../utils/cnpjValidator';
 
 export const ClientsPage: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
+  const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -32,11 +31,26 @@ export const ClientsPage: React.FC = () => {
 
   const loadClients = () => {
     setClients(db.getClients());
+    setHistory(db.getHistory());
   };
 
   useEffect(() => {
     loadClients();
   }, []);
+
+  const getClientTotalValue = (client: Client): number => {
+    const historySum = history
+      .filter((h) => h.cleanCnpj === client.cleanCnpj && h.invoiceValue && h.invoiceValue > 0)
+      .reduce((acc, h) => acc + (h.invoiceValue || 0), 0);
+    return Math.max(client.notesTotalValue || 0, historySum);
+  };
+
+  const formatCurrency = (val: number): string => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(val || 0);
+  };
 
   const openAddModal = () => {
     setEditingClient(null);
@@ -136,7 +150,7 @@ export const ClientsPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-            Total de Empresas
+            Total de Clientes
           </span>
           <span className="text-2xl font-black text-slate-900 mt-1 block">{clients.length}</span>
         </div>
@@ -150,10 +164,12 @@ export const ClientsPage: React.FC = () => {
         </div>
         <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-            Reconhecimento Automático
+            Valor Total Acumulado
           </span>
-          <span className="text-sm font-semibold text-emerald-600 mt-1 flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4" /> 100% dos CNPJs cadastrados
+          <span className="text-2xl font-black text-emerald-600 mt-1 block font-mono">
+            {formatCurrency(
+              clients.reduce((acc, c) => acc + getClientTotalValue(c), 0)
+            )}
           </span>
         </div>
       </div>
@@ -183,57 +199,64 @@ export const ClientsPage: React.FC = () => {
                 <th className="py-3.5 px-6">CNPJ</th>
                 <th className="py-3.5 px-6">Razão Social / Fantasia</th>
                 <th className="py-3.5 px-6 text-center">Notas</th>
+                <th className="py-3.5 px-6 text-right">Valor Total Processado</th>
                 <th className="py-3.5 px-6 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredClients.length > 0 ? (
-                filteredClients.map((client) => (
-                  <tr key={client.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3.5 px-6">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs">
-                          {client.customName.charAt(0).toUpperCase()}
+                filteredClients.map((client) => {
+                  const totalVal = getClientTotalValue(client);
+                  return (
+                    <tr key={client.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3.5 px-6">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs">
+                            {client.customName.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="font-bold text-slate-900">{client.customName}</span>
                         </div>
-                        <span className="font-bold text-slate-900">{client.customName}</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-6 font-mono font-semibold text-slate-700">
-                      {client.cnpj}
-                    </td>
-                    <td className="py-3.5 px-6 text-slate-600">
-                      {client.razaoSocial || client.nomeFantasia || '-'}
-                    </td>
-                    <td className="py-3.5 px-6 text-center">
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700">
-                        {client.notesCount || 0} notas
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-6 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          id={`btn-edit-client-${client.cleanCnpj}`}
-                          onClick={() => openEditModal(client)}
-                          title="Editar Cliente"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          id={`btn-delete-client-${client.cleanCnpj}`}
-                          onClick={() => handleDeleteClient(client)}
-                          title="Excluir Cliente"
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="py-3.5 px-6 font-mono font-semibold text-slate-700">
+                        {client.cnpj}
+                      </td>
+                      <td className="py-3.5 px-6 text-slate-600">
+                        {client.razaoSocial || client.nomeFantasia || '-'}
+                      </td>
+                      <td className="py-3.5 px-6 text-center">
+                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700">
+                          {client.notesCount || 0} notas
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-6 text-right font-bold text-emerald-700 font-mono">
+                        {formatCurrency(totalVal)}
+                      </td>
+                      <td className="py-3.5 px-6 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            id={`btn-edit-client-${client.cleanCnpj}`}
+                            onClick={() => openEditModal(client)}
+                            title="Editar Cliente"
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            id={`btn-delete-client-${client.cleanCnpj}`}
+                            onClick={() => handleDeleteClient(client)}
+                            title="Excluir Cliente"
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400">
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
                     <Building2 className="w-8 h-8 mx-auto mb-2 opacity-30" />
                     <p className="font-medium">
                       {searchQuery
