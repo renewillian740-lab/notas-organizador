@@ -69,6 +69,11 @@ export default function App() {
     const existing = db.getClients();
     if (existing.length === 0) {
       db.addOrUpdateClient({
+        cnpj: '55.573.511/0001-00',
+        customName: 'GUILHERME DOS SANTOS ARAGAO',
+        razaoSocial: 'GUILHERME DOS SANTOS ARAGAO',
+      });
+      db.addOrUpdateClient({
         cnpj: '04.252.011/0001-10',
         customName: 'ACME LOGISTICA',
         razaoSocial: 'ACME LOGISTICA E DISTRIBUICAO S.A.',

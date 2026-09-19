@@ -139,13 +139,32 @@ export function generateSampleInvoiceFiles(): File[] {
   // Amostra 5: Documento digitalizado sem camada de texto (para teste de OCR)
   const nf5Lines: string[] = []; // Vazio propositalmente
 
+  // Amostra 6: NF 27 - Guilherme dos Santos Aragão
+  const nf27Lines = [
+    'NOTA FISCAL ELETRONICA DE SERVICOS - NFS-e',
+    'Numero da Nota: 27',
+    'Data de Emissao: 30/06/2026',
+    '------------------------------------------------------------',
+    'PRESTADOR DE SERVICOS',
+    'Razao Social: CONSULTORIA E SERVICOS TECNICOS LTDA',
+    'CNPJ: 12.345.678/0001-99',
+    '------------------------------------------------------------',
+    'TOMADOR DE SERVICOS / CLIENTE',
+    'Razao Social: GUILHERME DOS SANTOS ARAGAO',
+    'CNPJ: 55.573.511/0001-00',
+    '------------------------------------------------------------',
+    'VALOR TOTAL DA NOTA: R$ 4.400,00',
+  ];
+
   const blob1 = createMinimalPdfWithText(nf1Lines);
   const blob2 = createMinimalPdfWithText(nf2Lines);
   const blob3 = createMinimalPdfWithText(nf3Lines);
   const blob4 = createMinimalPdfWithText(nf4Lines);
   const blob5 = createMinimalPdfWithText(nf5Lines);
+  const blob27 = createMinimalPdfWithText(nf27Lines);
 
   return [
+    new File([blob27], 'NF_27_55.573.511_GUILHERME_DOS_SANTOS_ARAGAO_R$4400,00_30-06-2026.pdf', { type: 'application/pdf' }),
     new File([blob1], 'NF_original_servico_tech_acme.pdf', { type: 'application/pdf' }),
     new File([blob2], 'DANFE_019452_papelaria_novaera.pdf', { type: 'application/pdf' }),
     new File([blob3], 'NFS-e_8841_design_hipermercado.pdf', { type: 'application/pdf' }),
