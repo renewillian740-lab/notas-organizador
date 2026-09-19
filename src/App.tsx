@@ -9,9 +9,6 @@ import { RefreshCw } from 'lucide-react';
 const ProcessInvoices = lazy(() =>
   import('./components/ProcessInvoices').then((m) => ({ default: m.ProcessInvoices }))
 );
-const SendInvoicesPage = lazy(() =>
-  import('./components/SendInvoicesPage').then((m) => ({ default: m.SendInvoicesPage }))
-);
 const ClientsPage = lazy(() =>
   import('./components/ClientsPage').then((m) => ({ default: m.ClientsPage }))
 );
@@ -41,7 +38,7 @@ function PageLoadingFallback() {
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<
-    'dashboard' | 'process' | 'send' | 'clients' | 'history' | 'settings'
+    'dashboard' | 'process' | 'clients' | 'history' | 'settings'
   >('dashboard');
 
   const [clientsCount, setClientsCount] = useState(0);
@@ -108,8 +105,6 @@ export default function App() {
               onProcessingCompleted={refreshGlobalState}
             />
           )}
-
-          {currentTab === 'send' && <SendInvoicesPage />}
 
           {currentTab === 'clients' && <ClientsPage />}
 

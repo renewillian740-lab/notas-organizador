@@ -23,7 +23,7 @@ interface DashboardProps {
   pendingNotesCount: number;
   clientsCount: number;
   recentHistory: HistoryRecord[];
-  onNavigateTab: (tab: 'dashboard' | 'process' | 'send' | 'clients' | 'history' | 'settings') => void;
+  onNavigateTab: (tab: 'dashboard' | 'process' | 'clients' | 'history' | 'settings') => void;
   onViewInvoiceDetails: (record: HistoryRecord) => void;
   onLoadSamples: () => void;
 }

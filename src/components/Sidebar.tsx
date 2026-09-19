@@ -10,14 +10,13 @@ import {
   Sun,
   Moon,
   Monitor,
-  Send,
   Trash2,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 interface SidebarProps {
-  currentTab: 'dashboard' | 'process' | 'send' | 'clients' | 'history' | 'settings';
-  onSelectTab: (tab: 'dashboard' | 'process' | 'send' | 'clients' | 'history' | 'settings') => void;
+  currentTab: 'dashboard' | 'process' | 'clients' | 'history' | 'settings';
+  onSelectTab: (tab: 'dashboard' | 'process' | 'clients' | 'history' | 'settings') => void;
   onOpenResetModal?: () => void;
   pendingReviewCount: number;
   clientsCount: number;
@@ -44,12 +43,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Processar notas',
       icon: FileSpreadsheet,
       badge: pendingReviewCount > 0 ? { text: `${pendingReviewCount}`, color: 'bg-amber-500 text-white' } : null,
-    },
-    {
-      id: 'send',
-      label: 'Enviar notas',
-      icon: Send,
-      badge: historyCount > 0 ? { text: `${historyCount}`, color: 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300' } : null,
     },
     {
       id: 'clients',

@@ -143,14 +143,14 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5">
-              <History className="w-6 h-6 text-emerald-600 dark:text-emerald-400" /> Histórico de Processamento
+              <History className="w-6 h-6 text-blue-600 dark:text-blue-400" /> Histórico de Processamento
             </h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
-              <Database className="w-3 h-3" /> Supabase Persistido
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
+              <Database className="w-3 h-3" /> Armazenamento Seguro
             </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Registro consolidado de todas as notas fiscais persistidas no Supabase e armazenadas no Storage privado.
+            Registro consolidado de todas as notas fiscais organizadas e seus respectivos arquivos PDF.
           </p>
         </div>
         <div className="flex items-center gap-2.5">
