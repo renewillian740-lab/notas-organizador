@@ -2,6 +2,7 @@ import React from 'react';
 import {
   LayoutDashboard,
   FileSpreadsheet,
+  FolderUp,
   Users,
   History,
   Settings,
@@ -15,8 +16,8 @@ import {
 import { useTheme } from '../context/ThemeContext';
 
 interface SidebarProps {
-  currentTab: 'dashboard' | 'process' | 'clients' | 'history' | 'settings';
-  onSelectTab: (tab: 'dashboard' | 'process' | 'clients' | 'history' | 'settings') => void;
+  currentTab: 'dashboard' | 'process' | 'upload' | 'clients' | 'history' | 'settings';
+  onSelectTab: (tab: 'dashboard' | 'process' | 'upload' | 'clients' | 'history' | 'settings') => void;
   onOpenResetModal?: () => void;
   pendingReviewCount: number;
   clientsCount: number;
@@ -43,6 +44,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Processar notas',
       icon: FileSpreadsheet,
       badge: pendingReviewCount > 0 ? { text: `${pendingReviewCount}`, color: 'bg-amber-500 text-white' } : null,
+    },
+    {
+      id: 'upload',
+      label: 'Subir dados',
+      icon: FolderUp,
+      badge: null,
     },
     {
       id: 'clients',

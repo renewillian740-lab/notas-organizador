@@ -9,6 +9,9 @@ import { RefreshCw } from 'lucide-react';
 const ProcessInvoices = lazy(() =>
   import('./components/ProcessInvoices').then((m) => ({ default: m.ProcessInvoices }))
 );
+const UploadDataPage = lazy(() =>
+  import('./components/UploadDataPage').then((m) => ({ default: m.UploadDataPage }))
+);
 const ClientsPage = lazy(() =>
   import('./components/ClientsPage').then((m) => ({ default: m.ClientsPage }))
 );
@@ -38,7 +41,7 @@ function PageLoadingFallback() {
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<
-    'dashboard' | 'process' | 'clients' | 'history' | 'settings'
+    'dashboard' | 'process' | 'upload' | 'clients' | 'history' | 'settings'
   >('dashboard');
 
   const [clientsCount, setClientsCount] = useState(0);
@@ -103,6 +106,13 @@ export default function App() {
           {currentTab === 'process' && (
             <ProcessInvoices
               onProcessingCompleted={refreshGlobalState}
+            />
+          )}
+
+          {currentTab === 'upload' && (
+            <UploadDataPage
+              onDataUploaded={refreshGlobalState}
+              onNavigateTab={setCurrentTab}
             />
           )}
 

@@ -13,6 +13,8 @@ import {
   Eye,
   CheckCircle2,
   FolderOpen,
+  FolderUp,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { HistoryRecord } from '../types';
 import { PdfViewerModal } from './PdfViewerModal';
@@ -23,7 +25,7 @@ interface DashboardProps {
   pendingNotesCount: number;
   clientsCount: number;
   recentHistory: HistoryRecord[];
-  onNavigateTab: (tab: 'dashboard' | 'process' | 'clients' | 'history' | 'settings') => void;
+  onNavigateTab: (tab: 'dashboard' | 'process' | 'upload' | 'clients' | 'history' | 'settings') => void;
   onViewInvoiceDetails: (record: HistoryRecord) => void;
   onLoadSamples: () => void;
 }
@@ -83,7 +85,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
             onClick={onLoadSamples}
             className="px-4 py-2.5 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-600 transition-all flex items-center gap-2 cursor-pointer"
           >
-            <FolderOpen className="w-4 h-4 text-blue-400" /> Testar com 5 Notas de Exemplo
+            <FolderOpen className="w-4 h-4 text-blue-400" /> Testar com Exemplos
+          </button>
+          <button
+            id="btn-dash-upload-data"
+            onClick={() => onNavigateTab('upload')}
+            className="px-4 py-2.5 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-600 transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <FolderUp className="w-4 h-4 text-emerald-400" /> Subir Dados
           </button>
           <button
             id="btn-dash-start-process"
@@ -283,8 +292,3 @@ export const Dashboard: React.FC<DashboardProps> = ({
     </div>
   );
 };
-
-// Auxiliary icon component
-function FileSpreadsheet(props: any) {
-  return <FileText {...props} />;
-}
