@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="folderGrad" x1="8" y1="18" x2="56" y2="54" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#10B981"/>
+      <stop offset="1" stop-color="#059669"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="64" height="64" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded box -->
+  <rect width="64" height="64" rx="16" fill="url(#bgGrad)"/>
+
+  <!-- Back folder outline shape -->
+  <path d="M12 20C12 17.7909 13.7909 16 16 16H26L30 20H48C50.2091 20 52 21.7909 52 24V44C52 46.2091 50.2091 48 48 48H16C13.7909 48 12 46.2091 12 44V20Z" fill="#1E40AF" opacity="0.6"/>
+
+  <!-- Document Sheet -->
+  <g filter="url(#shadow)">
+    <rect x="18" y="12" width="28" height="36" rx="4" fill="#FFFFFF"/>
+    <!-- Folded corner / Lines -->
+    <rect x="22" y="18" width="14" height="3" rx="1.5" fill="#2563EB"/>
+    <rect x="22" y="24" width="20" height="2.5" rx="1.25" fill="#93C5FD"/>
+    <rect x="22" y="29" width="16" height="2.5" rx="1.25" fill="#93C5FD"/>
+    <rect x="22" y="34" width="12" height="2.5" rx="1.25" fill="#CBD5E1"/>
+  </g>
+
+  <!-- Front Folder Overlay with Emerald accent -->
+  <path d="M10 28C10 25.7909 11.7909 24 14 24H25.1716C26.2324 24 27.2498 24.4214 28 25.1716L30.8284 28H50C52.2091 28 54 29.7909 54 32V46C54 48.2091 52.2091 50 50 50H14C11.7909 50 10 48.2091 10 46V28Z" fill="url(#folderGrad)"/>
+
+  <!-- Checkmark Badge -->
+  <circle cx="44" cy="40" r="8" fill="#10B981" stroke="#FFFFFF" stroke-width="2"/>
+  <path d="M40.5 40L42.8 42.3L47.5 37.6" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
