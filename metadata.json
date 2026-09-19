@@ -1,0 +1,6 @@
+{
+  "name": "Organizador de Notas Fiscais",
+  "description": "Sistema completo para organização, extração de dados e renomeação automática de notas fiscais em PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
