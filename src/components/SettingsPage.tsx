@@ -19,6 +19,7 @@ import {
   Trash2,
   FolderPlus,
   Sparkles,
+  Building2,
 } from 'lucide-react';
 import { AppSettings } from '../types';
 import { db, DEFAULT_SETTINGS } from '../services/db';
@@ -323,7 +324,61 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
         </section>
 
-        {/* Seção 2: Estrutura de Pastas de Destino */}
+        {/* Seção 2: Minha Empresa (Prestador / Emissor) */}
+        <section className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                Minha Empresa (Prestador / Emissor)
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Dados da sua empresa que emite as notas. O sistema ignora estes dados na identificação do cliente e seleciona o Tomador de Serviços.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                CNPJ da Minha Empresa (Emissor)
+              </label>
+              <input
+                id="input-issuer-cnpj"
+                type="text"
+                value={settings.issuerCnpj || ''}
+                onChange={(e) => setSettings({ ...settings, issuerCnpj: e.target.value })}
+                placeholder="47.042.028/0001-55"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-mono focus:bg-white dark:focus:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                Razão Social / Nome da Minha Empresa
+              </label>
+              <input
+                id="input-issuer-name"
+                type="text"
+                value={settings.issuerName || ''}
+                onChange={(e) => setSettings({ ...settings, issuerName: e.target.value })}
+                placeholder="RENE WILLIAN SANTOS MENEZES 86139841500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs uppercase font-medium focus:bg-white dark:focus:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 text-[11px] text-blue-800 dark:text-blue-300 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span>
+              Ao processar notas, o sistema compara automaticamente o emissor com esses dados e extrai com precisão a empresa Tomadora (o cliente real).
+            </span>
+          </div>
+        </section>
+
+        {/* Seção 3: Estrutura de Pastas de Destino */}
         <section className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">

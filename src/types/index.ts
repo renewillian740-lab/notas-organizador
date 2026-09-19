@@ -195,4 +195,7 @@ export interface AppSettings {
   autoRegisterNewClients: boolean;
   alertOnAmbiguity: boolean;
   theme?: 'light' | 'dark' | 'system';
+  issuerCnpj?: string; // CNPJ da Minha Empresa / Emissor / Prestador
+  issuerName?: string; // Razão Social / Nome da Minha Empresa
 }
+

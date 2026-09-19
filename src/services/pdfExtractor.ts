@@ -1,5 +1,15 @@
 import { ExtractedInvoiceData, CandidateClient, EntityInfo, IdentificationMethod } from '../types';
-import { extractAllCNPJsFromText, formatCNPJ, isValidCNPJ, cleanCNPJ } from '../utils/cnpjValidator';
+import {
+  extractAllCNPJsFromText,
+  formatCNPJ,
+  formatCPF,
+  formatDocument,
+  isValidCNPJ,
+  isValidCPF,
+  cleanCNPJ,
+  cleanDocument,
+  extractMetadataFromFileName,
+} from '../utils/cnpjValidator';
 import { db } from './db';
 
 // Lazy loading do módulo pdfjs-dist sob demanda
@@ -65,7 +75,6 @@ export async function extractTextFromPDF(file: File): Promise<{ text: string; pa
  * Heurística avançada para extrair número da nota fiscal
  */
 function extractInvoiceNumber(text: string): string {
-  // Padrões comuns em NFS-e, NF-e, DANFE e CT-e brasileiras
   const patterns = [
     /(?:N[úu]mero\s*da\s*(?:Nota|NFS-e|NF-e|DANFE)|N[ºo°\.]\s*da\s*Nota|N[ºo°\.]\s*(?:NFS-e|NF-e|DANFE))\s*[:.\-]?\s*(\d{1,9})/i,
     /(?:NF-e|NFS-e|DANFE|N°|Nº|Numero|Número)\s*[:.\-]?\s*(\d{1,9})\b/i,
@@ -86,13 +95,12 @@ function extractInvoiceNumber(text: string): string {
     }
   }
 
-  // Fallback: se não encontrar número explícito, procura primeira sequência de 4-8 dígitos isolada perto de "NF"
   const fallbackMatch = text.match(/NF[^\d]*(\d{3,8})/i);
   if (fallbackMatch && fallbackMatch[1]) {
     return fallbackMatch[1];
   }
 
-  return 'S_N'; // Sem Número
+  return 'S_N';
 }
 
 /**
@@ -104,7 +112,6 @@ function extractInvoiceDate(text: string): { dataStr: string; ano: string; mes: 
   const defaultMesIndex = now.getMonth();
   const defaultMes = String(defaultMesIndex + 1).padStart(2, '0');
 
-  // Padrões comuns de data no Brasil (DD/MM/AAAA ou DD-MM-AAAA)
   const datePatterns = [
     /(?:Data(?:\s*e\s*Hora)?\s*(?:da)?\s*Emiss[aã]o|Data\s*do\s*Fato\s*Gerador|Emiss[aã]o|Data\s*de\s*Sa[ií]da)\s*[:.\-]?\s*(\d{2})[\/\.-](\d{2})[\/\.-](\d{4})/i,
     /(?:Compet[êe]ncia)\s*[:.\-]?\s*(\d{2})[\/\.-](\d{4})/i,
@@ -128,7 +135,6 @@ function extractInvoiceDate(text: string): { dataStr: string; ano: string; mes: 
           };
         }
       } else if (match.length === 3) {
-        // Formato Competência MM/AAAA
         const mes = match[1].padStart(2, '0');
         const ano = match[2];
         const mesNum = parseInt(mes, 10);
@@ -156,7 +162,6 @@ function extractInvoiceDate(text: string): { dataStr: string; ano: string; mes: 
  * Heurística avançada para extrair valor total da nota
  */
 function extractInvoiceValue(text: string): { value: number | null; formatted: string } {
-  // Padrões de valor monetário
   const valuePatterns = [
     /(?:VALOR\s+TOTAL\s+DA\s+NOTA|VALOR\s+TOTAL\s+DO\s+SERVI[ÇC]O|VALOR\s+L[ÍI]QUIDO|VALOR\s+TOTAL\s+DOS\s+SERVI[ÇC]OS|VALOR\s+TOTAL\s+DA\s+NF-e|VALOR\s+TOTAL\s+L[ÍI]QUIDO|VALOR\s+DA\s+NOTA|TOTAL\s+L[ÍI]QUIDO\s+DA\s+NOTA)\s*[:.\-]?\s*(?:R\$\s*)?([\d\.,]+)/i,
     /(?:TOTAL\s+GERAL|TOTAL\s+A\s+PAGAR|TOTAL\s+DA\s+FATURA|VALOR\s+SERVI[ÇC]OS)\s*[:.\-]?\s*(?:R\$\s*)?([\d\.,]+)/i,
@@ -167,7 +172,6 @@ function extractInvoiceValue(text: string): { value: number | null; formatted: s
     const match = text.match(pattern);
     if (match && match[1]) {
       let rawVal = match[1].trim();
-      // Remove pontos de milhar e substitui vírgula decimal
       const cleanVal = rawVal.replace(/\./g, '').replace(',', '.');
       const num = parseFloat(cleanVal);
       if (!isNaN(num) && num > 0) {
@@ -186,163 +190,380 @@ function extractInvoiceValue(text: string): { value: number | null; formatted: s
 }
 
 /**
- * Extrai nomes empresariais (Razão Social / Nome Fantasia) próximos a um CNPJ
+ * Divide o texto do documento em seções semânticas estruturadas
  */
-function extractEntityNameNearCNPJ(context: string, cleanCnpj: string): { name: string; role: 'TOMADOR' | 'DESTINATARIO' | 'CLIENTE' | 'PRESTADOR' | 'EMITENTE' | 'OUTRO' } {
-  const upper = context.toUpperCase();
-  
-  let role: 'TOMADOR' | 'DESTINATARIO' | 'CLIENTE' | 'PRESTADOR' | 'EMITENTE' | 'OUTRO' = 'OUTRO';
+function splitInvoiceSections(text: string): {
+  prestadorText: string;
+  tomadorText: string;
+  servicosText: string;
+} {
+  const upper = text.toUpperCase();
 
-  // Identificação do papel pelo contexto
-  if (upper.includes('TOMADOR') || upper.includes('DESTINAT') || upper.includes('CLIENTE') || upper.includes('CONTRATANTE')) {
-    if (upper.includes('TOMADOR')) role = 'TOMADOR';
-    else if (upper.includes('DESTINAT')) role = 'DESTINATARIO';
-    else role = 'CLIENTE';
-  } else if (upper.includes('PRESTADOR') || upper.includes('EMITENTE') || upper.includes('EMISSOR') || upper.includes('PRESTADORA')) {
-    if (upper.includes('PRESTADOR')) role = 'PRESTADOR';
-    else role = 'EMITENTE';
-  }
-
-  // Tenta capturar razão social pelo padrão "RAZÃO SOCIAL:", "NOME / RAZÃO SOCIAL:", "NOME:"
-  const namePatterns = [
-    /(?:Raz[ãa]o\s*Social|Nome\s*\/\s*Raz[ãa]o\s*Social|Nome\s*Empresarial|Nome\s*Fantasia|Nome)\s*[:.\-]?\s*([A-Z0-9\.\,\-\s\&]{3,60})/i,
-    /(?:TOMADOR\s+DE\s+SERVI[ÇC]OS|DESTINAT[ÁA]RIO\/REMETENTE|PRESTADOR\s+DE\s+SERVI[ÇC]OS)[^\n]*?\n([A-Z0-9\.\,\-\s\&]{3,60})/i,
+  const tomadorKeywords = [
+    'TOMADOR DE SERVIÇOS',
+    'TOMADOR DE SERVICOS',
+    'DADOS DO TOMADOR',
+    'DESTINATÁRIO / REMETENTE',
+    'DESTINATARIO / REMETENTE',
+    'DESTINATÁRIO',
+    'DESTINATARIO',
+    'IDENTIFICAÇÃO DO TOMADOR',
+    'DADOS DO CLIENTE',
+    'PAGADOR / CONTRATANTE',
+    'TOMADOR',
   ];
 
-  for (const pattern of namePatterns) {
-    const match = context.match(pattern);
+  const prestadorKeywords = [
+    'PRESTADOR DE SERVIÇOS',
+    'PRESTADOR DE SERVICOS',
+    'DADOS DO PRESTADOR',
+    'EMITENTE',
+    'IDENTIFICAÇÃO DO PRESTADOR',
+    'PRESTADOR',
+  ];
+
+  const servicosKeywords = [
+    'DISCRIMINAÇÃO DOS SERVIÇOS',
+    'DISCRIMINACAO DOS SERVICOS',
+    'DESCRIÇÃO DOS SERVIÇOS',
+    'DADOS DOS SERVIÇOS',
+    'VALOR TOTAL DOS SERVIÇOS',
+    'CÁLCULO DO ISSQN',
+    'VALORES',
+  ];
+
+  let tomadorIndex = -1;
+  for (const kw of tomadorKeywords) {
+    const idx = upper.indexOf(kw);
+    if (idx !== -1 && (tomadorIndex === -1 || idx < tomadorIndex)) {
+      tomadorIndex = idx;
+    }
+  }
+
+  let prestadorIndex = -1;
+  for (const kw of prestadorKeywords) {
+    const idx = upper.indexOf(kw);
+    if (idx !== -1 && (prestadorIndex === -1 || idx < prestadorIndex)) {
+      prestadorIndex = idx;
+    }
+  }
+
+  let servicosIndex = -1;
+  for (const kw of servicosKeywords) {
+    const idx = upper.indexOf(kw);
+    if (idx !== -1 && (servicosIndex === -1 || idx < servicosIndex)) {
+      servicosIndex = idx;
+    }
+  }
+
+  let prestadorText = '';
+  let tomadorText = '';
+  let servicosText = '';
+
+  if (prestadorIndex !== -1 && tomadorIndex !== -1) {
+    if (prestadorIndex < tomadorIndex) {
+      prestadorText = text.substring(prestadorIndex, tomadorIndex);
+      tomadorText =
+        servicosIndex > tomadorIndex
+          ? text.substring(tomadorIndex, servicosIndex)
+          : text.substring(tomadorIndex, tomadorIndex + 1200);
+    } else {
+      tomadorText = text.substring(tomadorIndex, prestadorIndex);
+      prestadorText =
+        servicosIndex > prestadorIndex
+          ? text.substring(prestadorIndex, servicosIndex)
+          : text.substring(prestadorIndex, prestadorIndex + 1200);
+    }
+  } else if (tomadorIndex !== -1) {
+    tomadorText =
+      servicosIndex > tomadorIndex
+        ? text.substring(tomadorIndex, servicosIndex)
+        : text.substring(tomadorIndex, tomadorIndex + 1200);
+  } else if (prestadorIndex !== -1) {
+    prestadorText = text.substring(prestadorIndex, prestadorIndex + 1000);
+  }
+
+  if (servicosIndex !== -1) {
+    servicosText = text.substring(servicosIndex);
+  }
+
+  return { prestadorText, tomadorText, servicosText };
+}
+
+/**
+ * Extrai Razão Social ou Nome Empresarial dentro de uma seção específica
+ */
+function extractNameFromSection(sectionText: string): string | null {
+  if (!sectionText || sectionText.trim().length === 0) return null;
+
+  const patterns = [
+    /(?:Raz[ãa]o\s*Social|Nome\s*\/\s*Raz[ãa]o\s*Social|Nome\s*Empresarial|Nome\s*Fantasia)\s*[:.\-]?\s*([A-Z0-9\.\,\-\s\&]{3,65})/i,
+    /(?:Nome)\s*[:.\-]?\s*([A-Z0-9\.\,\-\s\&]{3,60})/i,
+  ];
+
+  for (const pat of patterns) {
+    const match = sectionText.match(pat);
     if (match && match[1]) {
-      let candidate = match[1].trim();
-      // Remove lixo comum e palavras-chave que podem ter sido engolidas
-      candidate = candidate.replace(/\b(CNPJ|CPF|INSCRIÇÃO|ENDEREÇO|BAIRRO|MUNICÍPIO|UF|CEP|TELEFONE|E-MAIL|EMAIL)\b.*$/i, '').trim();
-      if (candidate.length >= 3 && !/^\d+$/.test(candidate)) {
-        return { name: candidate, role };
+      let cleaned = match[1].trim();
+      cleaned = cleaned
+        .replace(
+          /\b(CPF|CNPJ|INSCRIÇÃO|ENDEREÇO|BAIRRO|MUNICÍPIO|UF|CEP|TELEFONE|E-MAIL|EMAIL|COMPETÊNCIA|DATA)\b.*$/i,
+          ''
+        )
+        .trim();
+      if (cleaned.length >= 3 && !/^\d+$/.test(cleaned)) {
+        return cleaned.toUpperCase();
       }
     }
   }
 
-  // Fallback: procura sequência de palavras em maiúsculas com mais de 2 termos
-  const lines = context.split('\n').map((l) => l.trim());
-  for (const line of lines) {
-    if (line.length > 5 && line.length < 70 && !line.includes(cleanCnpj) && !/^\d+$/.test(line)) {
-      if (!/(CNPJ|CPF|INSCRI|ENDERE|CEP|DATA|VALOR|TOTAL|NOTA|SERVI|MUNIC)/i.test(line)) {
-        return { name: line, role };
-      }
+  // Fallback: Procura por linhas com termos em maiúsculas após o cabeçalho
+  const lines = sectionText.split('\n').map((l) => l.trim()).filter(Boolean);
+  for (const line of lines.slice(1, 4)) {
+    if (
+      line.length >= 4 &&
+      line.length <= 70 &&
+      !/(TOMADOR|PRESTADOR|CNPJ|CPF|INSCRI|ENDERE|CEP|MUNIC|VALOR|SERVI)/i.test(line) &&
+      !/^\d+$/.test(line)
+    ) {
+      return line.toUpperCase();
     }
   }
 
-  return { name: `Empresa CNPJ ${formatCNPJ(cleanCnpj)}`, role };
+  return null;
 }
 
 /**
  * Algoritmo Principal de Extração e Identificação Semântica da Nota Fiscal
  */
-export async function analyzeInvoicePDF(file: File): Promise<ExtractedInvoiceData> {
-  const { text, pageCount } = await extractTextFromPDF(file);
+export async function analyzeInvoicePDF(
+  file: File,
+  originalFileName?: string
+): Promise<ExtractedInvoiceData> {
+  const fileName = originalFileName || file.name || '';
+  const fileMeta = extractMetadataFromFileName(fileName);
+
+  let text = '';
+  let pageCount = 1;
+
+  try {
+    const extracted = await extractTextFromPDF(file);
+    text = extracted.text;
+    pageCount = extracted.pageCount;
+  } catch (e) {
+    console.warn('Falha na leitura direta do PDF:', e);
+  }
 
   const hasText = text.trim().length > 30;
-  const needsOcr = !hasText;
+  const needsOcr = !hasText && !fileMeta.hasStructure;
 
-  if (needsOcr) {
+  // Se o PDF não tiver camada de texto pesquisável, mas o nome do arquivo trouxer metadados completos
+  if (!hasText && fileMeta.hasStructure && fileMeta.clientName) {
+    const chosenClient = fileMeta.clientName;
+    const formattedVal = fileMeta.invoiceValueFormatted || 'R$ 0,00';
+    const dateStr = fileMeta.invoiceDate || '01/01/' + new Date().getFullYear();
+
+    const registeredClients = db.getClients();
+    const registered = registeredClients.find(
+      (c) => c.customName.toUpperCase() === chosenClient.toUpperCase()
+    );
+
     return {
-      numeroNota: 'S_N',
-      dataEmissao: '01/01/' + new Date().getFullYear(),
-      anoEmissao: String(new Date().getFullYear()),
-      mesEmissao: '01',
-      mesExtenso: MONTH_NAMES[0],
-      valorTotal: null,
-      valorTotalFormatted: 'R$ 0,00',
+      numeroNota: fileMeta.invoiceNumber || 'S_N',
+      dataEmissao: dateStr,
+      anoEmissao: dateStr.split('/')[2] || String(new Date().getFullYear()),
+      mesEmissao: dateStr.split('/')[1] || '01',
+      mesExtenso: MONTH_NAMES[parseInt(dateStr.split('/')[1] || '1', 10) - 1] || '01 - JANEIRO',
+      valorTotal: fileMeta.invoiceValue ?? null,
+      valorTotalFormatted: formattedVal,
       prestador: null,
-      tomador: null,
+      tomador: {
+        cnpj: fileMeta.cnpjOrCpf || '',
+        cleanCnpj: cleanDocument(fileMeta.cnpjOrCpf || ''),
+        razaoSocial: chosenClient,
+        rawContext: `Extraído do arquivo: ${fileName}`,
+      },
       destinatario: null,
       emitente: null,
       allCnpjs: [],
-      selectedClient: null,
-      identificationMethod: 'NAO_IDENTIFICADO',
-      diagnosticNotes: 'PDF sem camada de texto pesquisável. Documento necessita de OCR.',
-      candidateClients: [],
+      selectedClient: {
+        cnpj: fileMeta.cnpjOrCpf || '',
+        cleanCnpj: cleanDocument(fileMeta.cnpjOrCpf || ''),
+        name: registered ? registered.customName : chosenClient,
+        isPreRegistered: Boolean(registered),
+      },
+      identificationMethod: 'IDENTIFICACAO_AUTOMATICA',
+      diagnosticNotes: `Cliente "${chosenClient}" identificado diretamente pelo padrão do nome do arquivo original.`,
+      candidateClients: [
+        {
+          cnpj: fileMeta.cnpjOrCpf || '',
+          cleanCnpj: cleanDocument(fileMeta.cnpjOrCpf || ''),
+          name: chosenClient,
+          role: 'TOMADOR',
+          confidence: 100,
+          reason: 'Extraído com sucesso da estrutura do nome do arquivo original.',
+        },
+      ],
       hasText: false,
-      needsOcr: true,
+      needsOcr: false,
       pageCount,
       rawText: text,
-      confidenceScore: 0,
+      confidenceScore: 95,
     };
   }
 
-  // 1. Extração de Metadados
-  const numeroNota = extractInvoiceNumber(text);
-  const { dataStr, ano, mes, mesExtenso } = extractInvoiceDate(text);
-  const { value: valorTotal, formatted: valorTotalFormatted } = extractInvoiceValue(text);
+  // 1. Extração de Metadados Básicos
+  let numeroNota = extractInvoiceNumber(text);
+  if (numeroNota === 'S_N' && fileMeta.invoiceNumber) {
+    numeroNota = fileMeta.invoiceNumber;
+  }
 
-  // 2. Extração e Validação de todos os CNPJs
-  const cnpjMatches = extractAllCNPJsFromText(text, 250);
+  let { dataStr, ano, mes, mesExtenso } = extractInvoiceDate(text);
+  if (fileMeta.invoiceDate && dataStr.startsWith('01/01')) {
+    dataStr = fileMeta.invoiceDate;
+    const parts = dataStr.split('/');
+    if (parts.length === 3) {
+      ano = parts[2];
+      mes = parts[1];
+      mesExtenso = MONTH_NAMES[parseInt(mes, 10) - 1] || mesExtenso;
+    }
+  }
 
-  // 3. Consulta de Clientes Pré-Cadastrados no Banco Local
-  const registeredClients = db.getClients();
+  let { value: valorTotal, formatted: valorTotalFormatted } = extractInvoiceValue(text);
+  if ((valorTotal === null || valorTotal === 0) && fileMeta.invoiceValue) {
+    valorTotal = fileMeta.invoiceValue;
+    valorTotalFormatted = fileMeta.invoiceValueFormatted || valorTotalFormatted;
+  }
+
+  // 2. Extração estruturada por seções
+  const { prestadorText, tomadorText } = splitInvoiceSections(text);
+
+  // 3. Obter configurações do Emissor (Minha Empresa / Prestador)
+  const settings = db.getSettings();
+  const issuerCnpjClean = cleanCNPJ(settings.issuerCnpj || '47042028000155');
+  const issuerName = (settings.issuerName || 'RENE WILLIAN').toUpperCase();
+
+  // 4. Extração de todos os documentos (CNPJs e CPFs) do documento
+  const allDocMatches = extractAllCNPJsFromText(text, 250);
+
+  // 5. Consulta de Clientes Pré-Cadastrados no Banco Local (excluindo emissor)
+  const registeredClients = db.getClients().filter((c) => {
+    const isIssuer =
+      (issuerCnpjClean && c.cleanCnpj === issuerCnpjClean) ||
+      (c.customName && c.customName.toUpperCase().includes('RENE WILLIAN'));
+    return !isIssuer;
+  });
   const registeredMap = new Map<string, (typeof registeredClients)[0]>();
   for (const client of registeredClients) {
     registeredMap.set(client.cleanCnpj, client);
   }
 
-  // 4. Análise de Entidades e Contextos
+  // 6. Análise detalhada do Tomador vs Prestador
   let prestador: EntityInfo | null = null;
   let tomador: EntityInfo | null = null;
-  let destinatario: EntityInfo | null = null;
-  let emitente: EntityInfo | null = null;
-
   const candidates: CandidateClient[] = [];
   const analyzedCnpjs: ExtractedInvoiceData['allCnpjs'] = [];
 
-  for (const match of cnpjMatches) {
-    const { name: extractedName, role } = extractEntityNameNearCNPJ(match.surroundingContext, match.clean);
-    
-    // Verifica se já está no cadastro
-    const registered = registeredMap.get(match.clean);
-    const finalName = registered ? registered.customName : extractedName;
+  // Tenta extrair o nome do tomador diretamente da seção TOMADOR
+  const tomadorExtractedName = extractNameFromSection(tomadorText);
+  const prestadorExtractedName = extractNameFromSection(prestadorText);
 
-    let score = 0;
-    let reason = '';
+  // Identifica documentos dentro das seções específicas
+  const tomadorDocs = extractAllCNPJsFromText(tomadorText, 150);
+  const prestadorDocs = extractAllCNPJsFromText(prestadorText, 150);
 
-    if (registered) {
-      score += 100;
-      reason += 'Empresa cadastrada no banco de clientes permanente (+100). ';
+  // Se encontrou documento e nome no prestador:
+  if (prestadorDocs.length > 0 || prestadorExtractedName) {
+    const pDoc = prestadorDocs[0];
+    prestador = {
+      cnpj: pDoc ? pDoc.formatted : settings.issuerCnpj || '',
+      cleanCnpj: pDoc ? pDoc.clean : issuerCnpjClean,
+      razaoSocial: prestadorExtractedName || settings.issuerName || 'PRESTADOR DE SERVIÇOS',
+      rawContext: prestadorText.substring(0, 300),
+    };
+  }
+
+  for (const match of allDocMatches) {
+    const upperContext = match.surroundingContext.toUpperCase();
+    const isPrestadorContext =
+      upperContext.includes('PRESTADOR') ||
+      upperContext.includes('EMITENTE') ||
+      upperContext.includes('EMISSOR') ||
+      (prestadorText && prestadorText.includes(match.raw));
+
+    const isTomadorContext =
+      upperContext.includes('TOMADOR') ||
+      upperContext.includes('DESTINAT') ||
+      upperContext.includes('CLIENTE') ||
+      upperContext.includes('CONTRATANTE') ||
+      (tomadorText && tomadorText.includes(match.raw));
+
+    const isIssuerDoc =
+      (issuerCnpjClean && match.clean === issuerCnpjClean) ||
+      (issuerName && upperContext.includes('RENE WILLIAN'));
+
+    let role: 'TOMADOR' | 'DESTINATARIO' | 'CLIENTE' | 'PRESTADOR' | 'EMITENTE' | 'OUTRO' = 'OUTRO';
+
+    if (isIssuerDoc || (isPrestadorContext && !isTomadorContext)) {
+      role = 'PRESTADOR';
+    } else if (isTomadorContext) {
+      role = 'TOMADOR';
+    } else {
+      role = 'OUTRO';
     }
 
-    if (role === 'TOMADOR') {
-      score += 80;
-      reason += 'Identificado no bloco de TOMADOR DE SERVIÇOS (+80). ';
-    } else if (role === 'DESTINATARIO') {
-      score += 75;
-      reason += 'Identificado no bloco de DESTINATÁRIO/CLIENTE (+75). ';
-    } else if (role === 'CLIENTE') {
-      score += 70;
-      reason += 'Identificado com palavra-chave CLIENTE/CONTRATANTE (+70). ';
-    } else if (role === 'PRESTADOR' || role === 'EMITENTE') {
-      score += 10;
-      reason += 'Identificado como PRESTADOR/EMISSOR da nota. ';
+    const registered = registeredMap.get(match.clean);
+    let entityName = registered ? registered.customName : '';
+
+    if (!entityName) {
+      if (role === 'TOMADOR' && tomadorExtractedName) {
+        entityName = tomadorExtractedName;
+      } else if (role === 'PRESTADOR' && prestadorExtractedName) {
+        entityName = prestadorExtractedName;
+      } else {
+        const nearName = extractNameFromSection(match.surroundingContext);
+        entityName = nearName || `Empresa ${match.formatted}`;
+      }
+    }
+
+    let confidence = 0;
+    let reason = '';
+
+    if (role === 'PRESTADOR' || isIssuerDoc) {
+      // PRESTADOR / EMISSOR NUNCA PODE SER SELECIONADO COMO CLIENTE!
+      confidence = -10000;
+      reason = 'Identificado como PRESTADOR/EMITENTE da nota (desqualificado como cliente).';
     } else {
-      score += 20;
-      reason += 'CNPJ válido identificado no corpo do documento. ';
+      if (registered) {
+        confidence += 250;
+        reason += `Cliente previamente cadastrado (${registered.customName}) (+250). `;
+      }
+      if (role === 'TOMADOR') {
+        confidence += 180;
+        reason += 'Localizado explicitamente na seção TOMADOR DE SERVIÇOS (+180). ';
+      } else {
+        confidence += 40;
+        reason += 'Documento válido encontrado no texto (+40). ';
+      }
     }
 
     const entityInfo: EntityInfo = {
       cnpj: match.formatted,
       cleanCnpj: match.clean,
-      razaoSocial: finalName,
+      razaoSocial: entityName,
       rawContext: match.surroundingContext,
     };
 
-    if (role === 'TOMADOR') tomador = entityInfo;
-    else if (role === 'DESTINATARIO') destinatario = entityInfo;
-    else if (role === 'PRESTADOR') prestador = entityInfo;
-    else if (role === 'EMITENTE') emitente = entityInfo;
+    if (role === 'TOMADOR' && !tomador) {
+      tomador = entityInfo;
+    }
 
     candidates.push({
       cnpj: match.formatted,
       cleanCnpj: match.clean,
-      name: finalName,
+      name: entityName,
       role,
-      confidence: score,
+      confidence,
       reason,
     });
 
@@ -350,67 +571,75 @@ export async function analyzeInvoicePDF(file: File): Promise<ExtractedInvoiceDat
       cnpj: match.formatted,
       cleanCnpj: match.clean,
       context: match.surroundingContext,
-      score,
-      associatedName: finalName,
+      score: confidence,
+      associatedName: entityName,
     });
   }
 
-  // Ordena candidatos pelo score de confiança
-  candidates.sort((a, b) => b.confidence - a.confidence);
+  // Se o nome do arquivo trouxe um cliente válido e claro (ex: TREND COMUNICACAO, ARYZONA, CLUB AGENCIA, FELIPE GOIS MELO)
+  if (fileMeta.clientName && !fileMeta.clientName.toUpperCase().includes('RENE WILLIAN')) {
+    const fnClient = fileMeta.clientName;
+    const registered = registeredClients.find(
+      (c) => c.customName.toUpperCase() === fnClient.toUpperCase()
+    );
 
-  // 5. Decisão Inteligente de Identificação
+    candidates.push({
+      cnpj: fileMeta.cnpjOrCpf || (tomador ? tomador.cnpj : ''),
+      cleanCnpj: cleanDocument(fileMeta.cnpjOrCpf || (tomador ? tomador.cleanCnpj : '')),
+      name: registered ? registered.customName : fnClient,
+      role: 'TOMADOR',
+      confidence: 190,
+      reason: `Identificado com alta precisão a partir do arquivo original "${fileName}" (+190).`,
+    });
+  } else if (tomadorExtractedName && !tomadorExtractedName.toUpperCase().includes('RENE WILLIAN')) {
+    // Se extraiu o nome do Tomador na seção do PDF mesmo sem CNPJ explícito
+    candidates.push({
+      cnpj: tomadorDocs.length > 0 ? tomadorDocs[0].formatted : '',
+      cleanCnpj: tomadorDocs.length > 0 ? tomadorDocs[0].clean : '',
+      name: tomadorExtractedName,
+      role: 'TOMADOR',
+      confidence: 160,
+      reason: 'Razão Social extraída da seção de TOMADOR DE SERVIÇOS do PDF (+160).',
+    });
+  }
+
+  // Filtra apenas candidatos elegíveis (com score positivo) e ordena
+  const validCandidates = candidates.filter((c) => c.confidence > 0);
+  validCandidates.sort((a, b) => b.confidence - a.confidence);
+
   let selectedClient: ExtractedInvoiceData['selectedClient'] = null;
   let identificationMethod: IdentificationMethod = 'NAO_IDENTIFICADO';
   let diagnosticNotes = '';
   let confidenceScore = 0;
 
-  if (candidates.length === 0) {
-    identificationMethod = 'NAO_IDENTIFICADO';
-    diagnosticNotes = 'Nenhum CNPJ válido identificado no documento.';
-    confidenceScore = 10;
-  } else {
-    const topCandidate = candidates[0];
-    const registered = registeredMap.get(topCandidate.cleanCnpj);
+  if (validCandidates.length > 0) {
+    const top = validCandidates[0];
+    const registered = registeredMap.get(top.cleanCnpj);
+
+    selectedClient = {
+      cnpj: top.cnpj,
+      cleanCnpj: top.cleanCnpj,
+      name: top.name,
+      isPreRegistered: Boolean(registered),
+    };
 
     if (registered) {
-      // Prioridade máxima: CNPJ já cadastrado
-      selectedClient = {
-        cnpj: registered.cnpj,
-        cleanCnpj: registered.cleanCnpj,
-        name: registered.customName,
-        isPreRegistered: true,
-      };
       identificationMethod = 'CLIENTE_CADASTRADO_POR_CNPJ';
-      diagnosticNotes = `Cliente "${registered.customName}" identificado automaticamente pelo CNPJ cadastrado (${registered.cnpj}).`;
+      diagnosticNotes = `Cliente "${top.name}" identificado pelo cadastro permanente (${top.cnpj}).`;
       confidenceScore = 100;
-    } else if (topCandidate.role === 'TOMADOR' || topCandidate.role === 'DESTINATARIO' || topCandidate.role === 'CLIENTE') {
-      // Prioridade 2: Contexto forte de tomador/destinatário
-      selectedClient = {
-        cnpj: topCandidate.cnpj,
-        cleanCnpj: topCandidate.cleanCnpj,
-        name: topCandidate.name,
-        isPreRegistered: false,
-      };
+    } else if (top.role === 'TOMADOR') {
       identificationMethod = 'CNPJ_CONTEXTO';
-      diagnosticNotes = `Cliente identificado através de contexto semântico (${topCandidate.role}) com CNPJ ${topCandidate.cnpj}.`;
-      confidenceScore = 85;
-    } else if (candidates.length === 1) {
-      // Apenas 1 CNPJ na nota
-      selectedClient = {
-        cnpj: topCandidate.cnpj,
-        cleanCnpj: topCandidate.cleanCnpj,
-        name: topCandidate.name,
-        isPreRegistered: false,
-      };
-      identificationMethod = 'IDENTIFICACAO_AUTOMATICA';
-      diagnosticNotes = `Único CNPJ identificado no documento (${topCandidate.cnpj}).`;
-      confidenceScore = 60;
+      diagnosticNotes = `Tomador de Serviços identificado com sucesso: "${top.name}".`;
+      confidenceScore = 90;
     } else {
-      // Múltiplos CNPJs sem distinção clara de Tomador -> Ambiguidade requer confirmação
-      identificationMethod = 'NAO_IDENTIFICADO';
-      diagnosticNotes = `Múltiplos CNPJs encontrados (${candidates.length}) sem indicação conclusiva do Tomador. Requer revisão manual.`;
-      confidenceScore = 40;
+      identificationMethod = 'IDENTIFICACAO_AUTOMATICA';
+      diagnosticNotes = `Cliente identificado no documento: "${top.name}".`;
+      confidenceScore = 75;
     }
+  } else {
+    identificationMethod = 'NAO_IDENTIFICADO';
+    diagnosticNotes = 'Não foi possível identificar o Tomador de Serviços automaticamente. Requer revisão manual.';
+    confidenceScore = 20;
   }
 
   return {
@@ -423,13 +652,13 @@ export async function analyzeInvoicePDF(file: File): Promise<ExtractedInvoiceDat
     valorTotalFormatted,
     prestador,
     tomador,
-    destinatario,
-    emitente,
+    destinatario: tomador,
+    emitente: prestador,
     allCnpjs: analyzedCnpjs,
     selectedClient,
     identificationMethod,
     diagnosticNotes,
-    candidateClients: candidates,
+    candidateClients: validCandidates,
     hasText,
     needsOcr,
     pageCount,

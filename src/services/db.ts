@@ -1,5 +1,5 @@
 import { Client, HistoryRecord, AppSettings } from '../types';
-import { cleanCNPJ, formatCNPJ } from '../utils/cnpjValidator';
+import { cleanCNPJ, formatCNPJ, extractMetadataFromFileName, cleanDocument } from '../utils/cnpjValidator';
 
 const CLIENTS_STORAGE_KEY = 'organizador_nf_clientes_v1';
 const HISTORY_STORAGE_KEY = 'organizador_nf_historico_v1';
@@ -11,10 +11,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
   namingPattern: 'NF_[NUMERO]_[CLIENTE]_[VALOR]_[DATA].pdf',
   folderStructure: 'MES_CLIENTE',
   duplicateHandling: 'NUMBER_SUFFIX',
-  autoRegisterNewClients: false,
+  autoRegisterNewClients: true,
   alertOnAmbiguity: true,
   theme: 'light',
+  issuerCnpj: '47.042.028/0001-55',
+  issuerName: 'RENE WILLIAN SANTOS MENEZES 86139841500',
 };
+
 
 class DBService {
   private isSyncingInvoices = false;
@@ -285,6 +288,148 @@ class DBService {
       body: JSON.stringify({ recordIds, channel }),
     }).catch((e) => console.warn('Erro ao atualizar envio no Supabase:', e));
   }
+
+  public updateHistoryRecord(id: string, updates: Partial<HistoryRecord>): HistoryRecord | null {
+    const history = this.getHistory();
+    const index = history.findIndex((h) => h.id === id);
+    if (index === -1) return null;
+
+    const updated = {
+      ...history[index],
+      ...updates,
+    };
+    history[index] = updated;
+    this.saveHistory(history);
+
+    // Sincroniza atualização no Supabase
+    fetch('/api/invoices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    }).catch((e) => console.warn('Erro ao atualizar nota fiscal no Supabase:', e));
+
+    return updated;
+  }
+
+  /**
+   * Reidentifica e repara registros do histórico onde o emissor/prestador (ex: Rene Willian)
+   * foi incorretamente atribuído como cliente, extraindo o cliente real do nome original do arquivo
+   * ou contexto semântico.
+   */
+  public reprocessAndFixAllHistory(): { fixedCount: number; newClientsCount: number; message: string } {
+    const history = this.getHistory();
+    const settings = this.getSettings();
+    const issuerCnpjClean = cleanCNPJ(settings.issuerCnpj || '47042028000155');
+    const issuerName = (settings.issuerName || 'RENE WILLIAN').toUpperCase();
+
+    let fixedCount = 0;
+    const newlyIdentifiedClients = new Map<string, string>();
+
+    // 1. Remove o próprio emissor da lista de clientes caso tenha sido cadastrado acidentalmente
+    const currentClients = this.getClients();
+    const filteredClients = currentClients.filter((c) => {
+      const isIssuer =
+        (issuerCnpjClean && c.cleanCnpj === issuerCnpjClean) ||
+        (c.customName && c.customName.toUpperCase().includes('RENE WILLIAN'));
+      return !isIssuer;
+    });
+    if (filteredClients.length !== currentClients.length) {
+      this.saveClients(filteredClients);
+    }
+
+    const updatedHistory = history.map((record) => {
+      const isIncorrectClient =
+        !record.clientName ||
+        record.clientName === 'CLIENTE_DESCONHECIDO' ||
+        record.clientName.toUpperCase().includes('RENE WILLIAN') ||
+        (issuerCnpjClean && record.cleanCnpj === issuerCnpjClean);
+
+      const fileMeta = extractMetadataFromFileName(record.originalFileName);
+
+      if (fileMeta.hasStructure && (isIncorrectClient || fileMeta.clientName)) {
+        fixedCount++;
+        const correctedClientName = fileMeta.clientName || record.clientName;
+        const correctedNumber = fileMeta.invoiceNumber || record.invoiceNumber;
+        const correctedValue = fileMeta.invoiceValue ?? record.invoiceValue;
+        const correctedValueFormatted = fileMeta.invoiceValueFormatted || record.invoiceValueFormatted;
+        const correctedDate = fileMeta.invoiceDate || record.invoiceDate;
+        const correctedDoc = fileMeta.cnpjOrCpf || (isIncorrectClient ? '' : record.cnpj);
+
+        // Se encontrou um cliente real novo, cadastra no banco
+        if (correctedClientName && !correctedClientName.toUpperCase().includes('RENE WILLIAN')) {
+          newlyIdentifiedClients.set(correctedClientName, correctedDoc || '');
+        }
+
+        // Reconstrói nome de arquivo padronizado
+        const generatedFileName = `NF_${correctedNumber}_${correctedClientName.replace(/[\s\/\\:*?"<>|]+/g, '_')}_${(correctedValueFormatted || '').replace(/\s+/g, '')}_${correctedDate.replace(/\//g, '-')}.pdf`;
+        const targetPath = `Notas Organizadas/${correctedClientName}/${generatedFileName}`;
+
+        return {
+          ...record,
+          clientName: correctedClientName,
+          cnpj: correctedDoc,
+          cleanCnpj: cleanDocument(correctedDoc),
+          invoiceNumber: correctedNumber,
+          invoiceValue: correctedValue,
+          invoiceValueFormatted: correctedValueFormatted,
+          invoiceDate: correctedDate,
+          generatedFileName,
+          targetPath,
+          status: 'PROCESSADO' as const,
+        };
+      }
+
+      return record;
+    });
+
+    this.saveHistory(updatedHistory);
+
+    // 2. Cadastra automaticamente os clientes reais identificados
+    let newClientsCount = 0;
+    newlyIdentifiedClients.forEach((doc, clientName) => {
+      const exists = this.getClients().some(
+        (c) => c.customName.toUpperCase() === clientName.toUpperCase()
+      );
+      if (!exists) {
+        newClientsCount++;
+        const dummyCnpj = doc || '00.000.000/0000-00';
+        this.addOrUpdateClient({
+          cnpj: dummyCnpj,
+          customName: clientName,
+          razaoSocial: clientName,
+        });
+      }
+    });
+
+    // 3. Atualiza contadores e totais dos clientes
+    const finalClients = this.getClients();
+    finalClients.forEach((client) => {
+      const clientRecords = updatedHistory.filter(
+        (h) =>
+          h.clientName.toUpperCase() === client.customName.toUpperCase() ||
+          (client.cleanCnpj && h.cleanCnpj === client.cleanCnpj)
+      );
+      client.notesCount = clientRecords.length;
+      client.notesTotalValue = clientRecords.reduce((acc, r) => acc + (r.invoiceValue || 0), 0);
+    });
+    this.saveClients(finalClients);
+
+    // 4. Sincroniza em lote com o Supabase
+    updatedHistory.forEach((rec) => {
+      fetch('/api/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rec),
+      }).catch(() => {});
+    });
+
+    return {
+      fixedCount,
+      newClientsCount,
+      message: `${fixedCount} notas foram reidentificadas com os clientes corretos e ${newClientsCount} novos clientes foram cadastrados!`,
+    };
+  }
+
 
   // ===================== CONFIGURAÇÕES =====================
 

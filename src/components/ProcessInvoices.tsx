@@ -237,7 +237,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
       setCurrentProcessingFile(current.originalFileName);
 
       try {
-        const extracted = await analyzeInvoicePDF(current.file);
+        const extracted = await analyzeInvoicePDF(current.file, current.originalFileName);
 
         let chosenClientName = 'CLIENTE_DESCONHECIDO';
         let status: 'IDENTIFICADO' | 'REVISAR' | 'ERRO' = 'IDENTIFICADO';

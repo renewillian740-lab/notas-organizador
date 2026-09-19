@@ -156,8 +156,8 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
       setItems([...updatedItems]);
 
       try {
-        // 1. Extração estruturada dos dados da nota fiscal
-        const extracted = await analyzeInvoicePDF(current.file);
+        // 1. Extração estruturada dos dados da nota fiscal (separando Prestador vs Tomador)
+        const extracted = await analyzeInvoicePDF(current.file, current.originalFileName);
         current.extractedData = extracted;
 
         const isKnown = extracted.selectedClient !== null;
