@@ -105,6 +105,20 @@ export interface InvoiceItem {
   destinationFilePath: string; // ex: 2026/09 - SETEMBRO/CLIENTE ABC/NF_123_CLIENTE_R$150,00_01-09-2026.pdf
   processedAt?: string;
   errorMessage?: string;
+  
+  // Armazenamento Supabase Storage
+  storageBucket?: string;
+  storagePath?: string;
+  storageUrl?: string;
+  storageViewUrl?: string;
+  storageDownloadUrl?: string;
+  isRemoteUploaded?: boolean;
+
+  // Compatibilidade com campos legados
+  blobUrl?: string;
+  blobPathname?: string;
+  blobViewUrl?: string;
+  blobDownloadUrl?: string;
 }
 
 export interface HistoryRecord {
@@ -123,14 +137,48 @@ export interface HistoryRecord {
   targetPath: string;
   storedFilePath?: string;
   fileUrl?: string;
+  
+  // Armazenamento Supabase Storage
+  storageBucket?: string;
+  storagePath?: string;
+  storageUrl?: string;
+  storageViewUrl?: string;
+  storageDownloadUrl?: string;
+  storageProvider?: 'supabase' | 'local';
+
+  // Compatibilidade com campos legados
+  blobUrl?: string;
+  blobPathname?: string;
+  blobViewUrl?: string;
+  blobDownloadUrl?: string;
+  blobStorageName?: string;
   mimeType?: string;
   hasOriginalPdf?: boolean;
+  pdfStorageId?: string;
+  
   processedAt: string;
   sentWhatsappAt?: string;
   sentEmailAt?: string;
   diagnosticSummary: string;
   rawTextSnippet?: string;
+  syncedToSupabase?: boolean;
 }
+
+export interface SupabaseStatusResult {
+  connected: boolean;
+  hasUrl: boolean;
+  hasKey: boolean;
+  keyType?: 'service_role' | 'anon' | 'none';
+  bucket: string;
+  bucketExists?: boolean;
+  storageAccessible?: boolean;
+  tablesStatus?: {
+    invoices: boolean;
+    clients: boolean;
+  };
+  message: string;
+}
+
 
 export interface AppSettings {
   sourceDirectoryName: string;
@@ -146,4 +194,5 @@ export interface AppSettings {
   duplicateHandling: 'NUMBER_SUFFIX' | 'SKIP';
   autoRegisterNewClients: boolean;
   alertOnAmbiguity: boolean;
+  theme?: 'light' | 'dark' | 'system';
 }

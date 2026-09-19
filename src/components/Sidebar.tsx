@@ -3,17 +3,20 @@ import {
   LayoutDashboard,
   FileSpreadsheet,
   Users,
-  Send,
   History,
   Settings,
   ShieldCheck,
-  FolderSync,
   FileCheck2,
+  Sun,
+  Moon,
+  Monitor,
+  Send,
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 interface SidebarProps {
-  currentTab: 'dashboard' | 'process' | 'clients' | 'history' | 'settings';
-  onSelectTab: (tab: 'dashboard' | 'process' | 'clients' | 'history' | 'settings') => void;
+  currentTab: 'dashboard' | 'process' | 'send' | 'clients' | 'history' | 'settings';
+  onSelectTab: (tab: 'dashboard' | 'process' | 'send' | 'clients' | 'history' | 'settings') => void;
   pendingReviewCount: number;
   clientsCount: number;
   historyCount: number;
@@ -40,6 +43,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: pendingReviewCount > 0 ? { text: `${pendingReviewCount}`, color: 'bg-amber-500 text-white' } : null,
     },
     {
+      id: 'send',
+      label: 'Enviar notas',
+      icon: Send,
+      badge: historyCount > 0 ? { text: `${historyCount}`, color: 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300' } : null,
+    },
+    {
       id: 'clients',
       label: 'Clientes',
       icon: Users,
@@ -58,6 +67,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: null,
     },
   ] as const;
+
+  const { theme, setTheme } = useTheme();
 
   return (
     <aside className="w-72 bg-slate-900 text-slate-200 flex flex-col shrink-0 border-r border-slate-800 select-none">
@@ -106,6 +117,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
       </nav>
+
+      {/* Theme Switcher Segmented Control */}
+      <div className="px-4 mb-3">
+        <div className="p-1 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-1">
+          <button
+            type="button"
+            id="theme-btn-light"
+            onClick={() => setTheme('light')}
+            title="Tema Claro"
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              theme === 'light'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Sun className="w-3.5 h-3.5" />
+            <span>Claro</span>
+          </button>
+          <button
+            type="button"
+            id="theme-btn-dark"
+            onClick={() => setTheme('dark')}
+            title="Tema Escuro"
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              theme === 'dark'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Moon className="w-3.5 h-3.5" />
+            <span>Escuro</span>
+          </button>
+          <button
+            type="button"
+            id="theme-btn-system"
+            onClick={() => setTheme('system')}
+            title="Seguir Sistema Operacional"
+            className={`p-1.5 rounded-lg text-xs transition-all ${
+              theme === 'system'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Monitor className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
 
       {/* Safety & Integrity Guarantee Footer */}
       <div className="p-4 mx-4 mb-4 rounded-xl bg-slate-800/70 border border-slate-700/50">

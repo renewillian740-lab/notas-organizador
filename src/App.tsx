@@ -9,6 +9,9 @@ import { RefreshCw } from 'lucide-react';
 const ProcessInvoices = lazy(() =>
   import('./components/ProcessInvoices').then((m) => ({ default: m.ProcessInvoices }))
 );
+const SendInvoicesPage = lazy(() =>
+  import('./components/SendInvoicesPage').then((m) => ({ default: m.SendInvoicesPage }))
+);
 const ClientsPage = lazy(() =>
   import('./components/ClientsPage').then((m) => ({ default: m.ClientsPage }))
 );
@@ -35,7 +38,7 @@ function PageLoadingFallback() {
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<
-    'dashboard' | 'process' | 'clients' | 'history' | 'settings'
+    'dashboard' | 'process' | 'send' | 'clients' | 'history' | 'settings'
   >('dashboard');
 
   const [clientsCount, setClientsCount] = useState(0);
@@ -62,6 +65,11 @@ export default function App() {
   useEffect(() => {
     refreshGlobalState();
 
+    // Sincroniza dados com Supabase se configurado
+    Promise.all([db.fetchRemoteClients(), db.fetchRemoteHistory()]).then(() => {
+      refreshGlobalState();
+    });
+
     // Se não houver clientes cadastrados no primeiro acesso, insere exemplo conceitual
     const existing = db.getClients();
     if (existing.length === 0) {
@@ -86,7 +94,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-100 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-100 dark:bg-slate-950 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100">
       {/* Persistent Sidebar */}
       <Sidebar
         currentTab={currentTab}
@@ -97,7 +105,7 @@ export default function App() {
       />
 
       {/* Main App Content View */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-slate-50/80">
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-slate-50/80 dark:bg-slate-950/80">
         <Suspense fallback={<PageLoadingFallback />}>
           {currentTab === 'dashboard' && (
             <Dashboard
@@ -117,6 +125,8 @@ export default function App() {
               onProcessingCompleted={refreshGlobalState}
             />
           )}
+
+          {currentTab === 'send' && <SendInvoicesPage />}
 
           {currentTab === 'clients' && <ClientsPage />}
 

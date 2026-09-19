@@ -11,22 +11,63 @@ import {
   ShieldCheck,
   AlertCircle,
   HardDrive,
+  Sun,
+  Moon,
+  Monitor,
+  Palette,
+  Database,
+  Check,
+  Copy,
+  Terminal,
+  RefreshCw,
 } from 'lucide-react';
-import { AppSettings } from '../types';
+import { AppSettings, SupabaseStatusResult } from '../types';
 import { db, DEFAULT_SETTINGS } from '../services/db';
+import { useTheme, ThemeMode } from '../context/ThemeContext';
+import { storageService } from '../services/storageService';
 
 interface SettingsPageProps {
   onSettingsSaved: () => void;
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) => {
+  const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [importMessage, setImportMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [supabaseStatus, setSupabaseStatus] = useState<SupabaseStatusResult | null>(null);
+  const [sqlSchema, setSqlSchema] = useState<string>('');
+  const [copiedSql, setCopiedSql] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState(false);
+
+  const fetchStatusAndSchema = async () => {
+    setLoadingStatus(true);
+    const status = await storageService.getStatus();
+    setSupabaseStatus(status);
+    try {
+      const res = await fetch('/api/supabase/sql-schema');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.sql) {
+          setSqlSchema(json.sql);
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar SQL Schema:', e);
+    }
+    setLoadingStatus(false);
+  };
 
   useEffect(() => {
-    setSettings(db.getSettings());
+    const loaded = db.getSettings();
+    setSettings(loaded);
+    fetchStatusAndSchema();
   }, []);
+
+  const handleThemeChange = (newTheme: ThemeMode) => {
+    setTheme(newTheme);
+    setSettings((prev) => ({ ...prev, theme: newTheme }));
+  };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +81,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
     if (window.confirm('Deseja restaurar as configurações padrão?')) {
       setSettings(DEFAULT_SETTINGS);
       db.saveSettings(DEFAULT_SETTINGS);
+      setTheme(DEFAULT_SETTINGS.theme || 'light');
       onSettingsSaved();
     }
   };
@@ -50,7 +92,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `backup_organizador_nf_${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `backup_organizador_nf_supabase_${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -66,7 +108,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
       const content = event.target?.result as string;
       const success = db.importBackup(content);
       if (success) {
-        setSettings(db.getSettings());
+        const updated = db.getSettings();
+        setSettings(updated);
+        if (updated.theme) {
+          setTheme(updated.theme);
+        }
         setImportMessage({ type: 'success', text: 'Backup restaurado com sucesso!' });
         onSettingsSaved();
       } else {
@@ -78,21 +124,28 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
     e.target.value = '';
   };
 
+  const handleCopySql = () => {
+    if (!sqlSchema) return;
+    navigator.clipboard.writeText(sqlSchema);
+    setCopiedSql(true);
+    setTimeout(() => setCopiedSql(false), 2500);
+  };
+
   return (
-    <div className="p-8 space-y-6 max-w-4xl mx-auto">
+    <div className="p-8 space-y-6 max-w-4xl mx-auto text-slate-900 dark:text-slate-100">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-          <Settings className="w-6 h-6 text-blue-600" /> Configurações do Sistema
+        <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5">
+          <Settings className="w-6 h-6 text-emerald-600 dark:text-emerald-400" /> Configurações do Sistema
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Personalize as regras de renomeação de arquivos, hierarquia de pastas e backups.
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Personalize aparência visual, regras de renomeação de arquivos, persistência no Supabase e backups.
         </p>
       </div>
 
       {saveSuccess && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Configurações salvas com sucesso!
+        <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Configurações salvas com sucesso!
         </div>
       )}
 
@@ -100,8 +153,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
         <div
           className={`p-4 rounded-xl border text-xs font-bold flex items-center gap-2 ${
             importMessage.type === 'success'
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-              : 'bg-rose-50 border-rose-200 text-rose-800'
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+              : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'
           }`}
         >
           {importMessage.type === 'success' ? (
@@ -114,18 +167,123 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
       )}
 
       <form onSubmit={handleSave} className="space-y-6">
+        {/* Card: Tema e Aparência Visual */}
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 uppercase tracking-wider">
+              <Palette className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Tema e Aparência
+            </h2>
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              Modo Atual: {theme === 'light' ? 'Claro' : theme === 'dark' ? 'Escuro' : 'Automático'}
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Escolha o tema de visualização de sua preferência para navegar e gerenciar as notas fiscais.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            {/* Tema Claro */}
+            <button
+              type="button"
+              id="theme-select-light"
+              onClick={() => handleThemeChange('light')}
+              className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between gap-3 ${
+                theme === 'light'
+                  ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 ring-2 ring-emerald-500/20'
+                  : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                  <Sun className="w-4 h-4" />
+                </div>
+                {theme === 'light' && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                )}
+              </div>
+              <div>
+                <span className="font-bold text-slate-900 dark:text-slate-100 text-xs block">
+                  Tema Claro
+                </span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 block leading-relaxed">
+                  Fundo limpo e alto contraste para ambientes iluminados.
+                </span>
+              </div>
+            </button>
+
+            {/* Tema Escuro */}
+            <button
+              type="button"
+              id="theme-select-dark"
+              onClick={() => handleThemeChange('dark')}
+              className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between gap-3 ${
+                theme === 'dark'
+                  ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 ring-2 ring-emerald-500/20'
+                  : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="w-8 h-8 rounded-lg bg-indigo-900 text-indigo-300 flex items-center justify-center">
+                  <Moon className="w-4 h-4" />
+                </div>
+                {theme === 'dark' && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                )}
+              </div>
+              <div>
+                <span className="font-bold text-slate-900 dark:text-slate-100 text-xs block">
+                  Tema Escuro
+                </span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 block leading-relaxed">
+                  Conforto visual e tons escuros para menor fadiga ocular.
+                </span>
+              </div>
+            </button>
+
+            {/* Tema Automático / Sistema */}
+            <button
+              type="button"
+              id="theme-select-system"
+              onClick={() => handleThemeChange('system')}
+              className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between gap-3 ${
+                theme === 'system'
+                  ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 ring-2 ring-emerald-500/20'
+                  : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center">
+                  <Monitor className="w-4 h-4" />
+                </div>
+                {theme === 'system' && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                )}
+              </div>
+              <div>
+                <span className="font-bold text-slate-900 dark:text-slate-100 text-xs block">
+                  Automático
+                </span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 block leading-relaxed">
+                  Segue automaticamente as configurações do sistema operacional.
+                </span>
+              </div>
+            </button>
+          </div>
+        </div>
+
         {/* Card: Estrutura de Pastas */}
-        <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider">
-            <FolderTree className="w-4 h-4 text-blue-600" /> Estrutura de Pastas de Destino
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 uppercase tracking-wider">
+            <FolderTree className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Estrutura de Pastas de Destino
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label
               className={`p-4 rounded-xl border cursor-pointer text-xs transition-all ${
                 settings.folderStructure === 'MES_CLIENTE'
-                  ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20'
-                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                  ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                  : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               <input
@@ -137,12 +295,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
                 className="sr-only"
               />
               <div className="flex items-center justify-between mb-1">
-                <span className="font-bold text-slate-900">MÊS / CLIENTE</span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
+                <span className="font-bold text-slate-900 dark:text-slate-100">MÊS / CLIENTE</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
                   Padrão (Pasta do Ano)
                 </span>
               </div>
-              <span className="text-slate-500 font-mono text-[11px] block">
+              <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] block">
                 09 - SETEMBRO / ACME LOG / NF_...pdf
               </span>
             </label>
@@ -150,8 +308,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
             <label
               className={`p-4 rounded-xl border cursor-pointer text-xs transition-all ${
                 settings.folderStructure === 'CLIENTE_MES'
-                  ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20'
-                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                  ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                  : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               <input
@@ -162,8 +320,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
                 onChange={() => setSettings({ ...settings, folderStructure: 'CLIENTE_MES' })}
                 className="sr-only"
               />
-              <span className="font-bold text-slate-900 block mb-1">CLIENTE / MÊS</span>
-              <span className="text-slate-500 font-mono text-[11px] block">
+              <span className="font-bold text-slate-900 dark:text-slate-100 block mb-1">CLIENTE / MÊS</span>
+              <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] block">
                 ACME LOG / 09 - SETEMBRO / NF_...pdf
               </span>
             </label>
@@ -171,8 +329,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
             <label
               className={`p-4 rounded-xl border cursor-pointer text-xs transition-all ${
                 settings.folderStructure === 'CLIENTE_DIRETO'
-                  ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20'
-                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                  ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                  : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               <input
@@ -183,8 +341,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
                 onChange={() => setSettings({ ...settings, folderStructure: 'CLIENTE_DIRETO' })}
                 className="sr-only"
               />
-              <span className="font-bold text-slate-900 block mb-1">APENAS CLIENTE</span>
-              <span className="text-slate-500 font-mono text-[11px] block">
+              <span className="font-bold text-slate-900 dark:text-slate-100 block mb-1">APENAS CLIENTE</span>
+              <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] block">
                 ACME LOG / NF_...pdf
               </span>
             </label>
@@ -192,8 +350,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
             <label
               className={`p-4 rounded-xl border cursor-pointer text-xs transition-all ${
                 settings.folderStructure === 'ANO_MES_CLIENTE'
-                  ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20'
-                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                  ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20'
+                  : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               <input
@@ -204,8 +362,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
                 onChange={() => setSettings({ ...settings, folderStructure: 'ANO_MES_CLIENTE' })}
                 className="sr-only"
               />
-              <span className="font-bold text-slate-900 block mb-1">ANO / MÊS / CLIENTE</span>
-              <span className="text-slate-500 font-mono text-[11px] block">
+              <span className="font-bold text-slate-900 dark:text-slate-100 block mb-1">ANO / MÊS / CLIENTE</span>
+              <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px] block">
                 2026 / 09 - SETEMBRO / ACME LOG / NF_...pdf
               </span>
             </label>
@@ -213,66 +371,66 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
         </div>
 
         {/* Card: Padrão de Nomenclatura */}
-        <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider">
-            <FileCode className="w-4 h-4 text-blue-600" /> Padrão de Nome do Arquivo
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 uppercase tracking-wider">
+            <FileCode className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Padrão de Nome do Arquivo
           </h2>
 
           <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
               Formato Padrão
             </label>
             <input
               type="text"
               value={settings.namingPattern}
               disabled
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-bold bg-slate-100 text-slate-700"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
             />
-            <p className="text-[11px] text-slate-500 mt-1">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
               Formato oficial: <code>NF_[NUMERO]_[CLIENTE]_[VALOR]_[DATA].pdf</code> (caracteres especiais e barras são higienizados automaticamente).
             </p>
           </div>
 
           {/* Exemplo ao vivo */}
-          <div className="p-3.5 rounded-xl bg-slate-900 text-slate-200 text-xs font-mono flex items-center justify-between">
+          <div className="p-3.5 rounded-xl bg-slate-900 dark:bg-slate-950 text-slate-200 text-xs font-mono flex items-center justify-between border border-slate-800">
             <span className="text-slate-400 text-[11px]">Exemplo de Saída:</span>
             <span className="font-bold text-emerald-400">NF_20260482_ACME_LOGISTICA_R$8450,00_15-09-2026.pdf</span>
           </div>
         </div>
 
         {/* Card: Regras de Duplicatas & Cadastros */}
-        <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider">
-            <ShieldCheck className="w-4 h-4 text-blue-600" /> Regras de Duplicidade & Integridade
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 uppercase tracking-wider">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Regras de Duplicidade & Integridade
           </h2>
 
           <div className="space-y-3">
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex items-start gap-3">
               <input
                 type="checkbox"
                 id="check-setting-auto-register"
                 checked={settings.autoRegisterNewClients}
                 onChange={(e) => setSettings({ ...settings, autoRegisterNewClients: e.target.checked })}
-                className="mt-0.5 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                className="mt-0.5 w-4 h-4 text-emerald-600 rounded border-slate-300 dark:border-slate-600 focus:ring-emerald-500 cursor-pointer"
               />
-              <label htmlFor="check-setting-auto-register" className="text-xs text-slate-700 cursor-pointer">
-                <span className="font-bold text-slate-900 block">
+              <label htmlFor="check-setting-auto-register" className="text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                <span className="font-bold text-slate-900 dark:text-slate-100 block">
                   Auto-cadastrar novas empresas identificadas
                 </span>
                 Adiciona automaticamente ao cadastro permanente os novos tomadores com alta confiança de identificação.
               </label>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex items-start gap-3">
               <input
                 type="checkbox"
                 id="check-setting-alert-ambiguity"
                 checked={settings.alertOnAmbiguity}
                 onChange={(e) => setSettings({ ...settings, alertOnAmbiguity: e.target.checked })}
-                className="mt-0.5 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                className="mt-0.5 w-4 h-4 text-emerald-600 rounded border-slate-300 dark:border-slate-600 focus:ring-emerald-500 cursor-pointer"
               />
-              <label htmlFor="check-setting-alert-ambiguity" className="text-xs text-slate-700 cursor-pointer">
-                <span className="font-bold text-slate-900 block">
+              <label htmlFor="check-setting-alert-ambiguity" className="text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                <span className="font-bold text-slate-900 dark:text-slate-100 block">
                   Exigir revisão manual em casos de ambiguidade
                 </span>
                 Pausa e solicita confirmação do operador quando houver múltiplos CNPJs sem tomador claro.
@@ -286,7 +444,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
           <button
             type="button"
             onClick={handleReset}
-            className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors flex items-center gap-1.5"
+            className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5"
           >
             <RotateCcw className="w-4 h-4" /> Restaurar Padrões
           </button>
@@ -294,19 +452,123 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
           <button
             id="btn-save-settings"
             type="submit"
-            className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all flex items-center gap-2"
+            className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer"
           >
             <Save className="w-4 h-4" /> Salvar Configurações
           </button>
         </div>
       </form>
 
+      {/* Card: Status do Supabase Storage & Banco de Dados */}
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+              Supabase Storage & Banco de Dados
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchStatusAndSchema}
+              title="Atualizar status de conexão"
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-emerald-600"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingStatus ? 'animate-spin' : ''}`} />
+            </button>
+            <span
+              className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
+                supabaseStatus?.connected
+                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                  : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+              }`}
+            >
+              {supabaseStatus?.connected ? 'SUPABASE CONECTADO' : 'BUFFER LOCAL ATIVO'}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-xs space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-slate-600 dark:text-slate-300">
+            <div>
+              <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 block uppercase">
+                Bucket Storage Privado
+              </span>
+              <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs">
+                {supabaseStatus?.bucket || 'notas-fiscais'} (Privado)
+              </span>
+            </div>
+            <div>
+              <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 block uppercase">
+                Tabelas no Banco
+              </span>
+              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                invoices, clients
+              </span>
+            </div>
+            <div>
+              <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 block uppercase">
+                Status do Storage
+              </span>
+              <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs">
+                {supabaseStatus?.storageAccessible ? 'Pronto para Uploads' : 'Modo Seguro / Buffer'}
+              </span>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-700/60 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400 space-y-1.5">
+            <p>
+              • <strong>Armazenamento de PDFs:</strong> Os PDFs originais são enviados para o bucket privado{' '}
+              <code className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
+                {supabaseStatus?.bucket || 'notas-fiscais'}
+              </code>{' '}
+              no Supabase Storage. As URLs assinadas com token temporário protegem os arquivos contra acessos públicos indevidos.
+            </p>
+            <p>
+              • <strong>Persistência dos Registros:</strong> O histórico completo de notas fiscais e cadastro de empresas clientes é gravado diretamente no banco PostgreSQL do Supabase, garantindo sincronização permanente entre dispositivos.
+            </p>
+          </div>
+        </div>
+
+        {/* Script SQL para criação de tabelas */}
+        {sqlSchema && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Terminal className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                Script SQL de Inicialização do Supabase
+              </span>
+              <button
+                type="button"
+                onClick={handleCopySql}
+                className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 flex items-center gap-1 cursor-pointer"
+              >
+                {copiedSql ? (
+                  <>
+                    <Check className="w-3 h-3 text-emerald-600" />
+                    <span className="text-emerald-600">Copiado!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    <span>Copiar SQL</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <pre className="p-3 bg-slate-900 text-emerald-400 rounded-xl font-mono text-[11px] overflow-x-auto max-h-48 border border-slate-800">
+              {sqlSchema}
+            </pre>
+          </div>
+        )}
+      </div>
+
       {/* Card: Backup e Restauração de Dados */}
-      <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-4">
-        <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider">
-          <HardDrive className="w-4 h-4 text-blue-600" /> Backup e Restauração de Dados
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+        <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 uppercase tracking-wider">
+          <HardDrive className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Backup e Restauração de Dados
         </h2>
-        <p className="text-xs text-slate-500 leading-relaxed">
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
           Exporte ou restaure todos os seus clientes cadastrados, histórico de notas organizadas e configurações personalizadas em um único arquivo JSON.
         </p>
 
@@ -315,13 +577,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
             id="btn-export-full-backup"
             type="button"
             onClick={handleExportBackup}
-            className="px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold transition-colors flex items-center gap-2 shadow-xs"
+            className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition-colors flex items-center gap-2 shadow-xs cursor-pointer"
           >
-            <Download className="w-4 h-4 text-blue-600" /> Baixar Arquivo de Backup (.json)
+            <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Baixar Arquivo de Backup (.json)
           </button>
 
-          <label className="px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold transition-colors flex items-center gap-2 shadow-xs cursor-pointer">
-            <Upload className="w-4 h-4 text-emerald-600" /> Restaurar Backup de Arquivo
+          <label className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition-colors flex items-center gap-2 shadow-xs cursor-pointer">
+            <Upload className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Restaurar Backup de Arquivo
             <input
               type="file"
               accept=".json"

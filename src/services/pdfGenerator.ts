@@ -1,25 +1,42 @@
 import { HistoryRecord } from '../types';
-import { pdfStorage } from './pdfStorage';
+import { storageService } from './storageService';
 
 /**
- * Recupea o ARQUIVO PDF ORIGINAL da nota fiscal exatamente como foi processado pelo sistema.
+ * Recupera o ARQUIVO PDF ORIGINAL da nota fiscal exatamente como foi processado pelo sistema e armazenado no Supabase Storage Privado.
  * Não reconstrói, não altera e não gera um novo resumo.
  */
 export async function getOriginalInvoicePdfBlob(record: HistoryRecord): Promise<Blob> {
-  // 1. Tenta obter do armazenamento físico IndexedDB pelo ID do registro
-  if (record.id) {
-    const originalBlob = await pdfStorage.getOriginalPdf(record.id);
-    if (originalBlob && originalBlob.size > 0) {
-      return originalBlob;
+  // 1. Tenta obter diretamente do Supabase Storage via URL de visualização/download
+  if (
+    record.storageViewUrl ||
+    record.storagePath ||
+    record.storageUrl ||
+    record.blobUrl ||
+    record.blobPathname ||
+    record.blobViewUrl
+  ) {
+    try {
+      const viewUrl = storageService.getPdfViewUrl(record);
+      const response = await fetch(viewUrl);
+      if (response.ok) {
+        const fetchedBlob = await response.blob();
+        if (fetchedBlob && fetchedBlob.size > 0) {
+          return fetchedBlob;
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao obter PDF do Supabase Storage:', e);
     }
   }
 
-  // 2. Tenta obter via URL se o registro contiver fileUrl
+  // 2. Tenta obter via URL se o registro contiver fileUrl válido
   if (
     record.fileUrl &&
     (record.fileUrl.startsWith('blob:') ||
       record.fileUrl.startsWith('data:') ||
-      record.fileUrl.startsWith('http'))
+      record.fileUrl.startsWith('http') ||
+      record.fileUrl.startsWith('/api/storage/') ||
+      record.fileUrl.startsWith('/api/blob/'))
   ) {
     try {
       const response = await fetch(record.fileUrl);
