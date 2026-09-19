@@ -25,6 +25,7 @@ import {
   saveOrganizedFilesToDirectoryHandle,
 } from '../services/fileOrganizer';
 import { db } from '../services/db';
+import { pdfStorage } from '../services/pdfStorage';
 import { generateSampleInvoiceFiles } from '../utils/samplePdfGenerator';
 import { ReviewModal } from './ReviewModal';
 import { InvoiceDetailModal } from './InvoiceDetailModal';
@@ -405,7 +406,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
 
       for (const item of itemsToExport) {
         if (item.extractedData) {
-          db.addHistoryRecord({
+          const newRecord = db.addHistoryRecord({
             originalFileName: item.originalFileName,
             generatedFileName: item.generatedFileName,
             clientName: item.extractedData.selectedClient?.name || 'Não identificado',
@@ -418,9 +419,16 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
             status: 'PROCESSADO',
             identificationMethod: item.extractedData.identificationMethod,
             targetPath: item.destinationFilePath,
+            storedFilePath: item.destinationFilePath,
+            mimeType: item.file?.type || 'application/pdf',
+            hasOriginalPdf: true,
             diagnosticSummary: item.extractedData.diagnosticNotes,
             rawTextSnippet: item.extractedData.rawText.substring(0, 500),
           });
+
+          if (item.file) {
+            await pdfStorage.saveOriginalPdf(newRecord.id, item.file);
+          }
 
           if (item.extractedData.selectedClient?.cleanCnpj) {
             db.incrementClientStats(

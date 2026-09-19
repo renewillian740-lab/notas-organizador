@@ -121,6 +121,10 @@ export interface HistoryRecord {
   status: InvoiceStatus;
   identificationMethod: IdentificationMethod;
   targetPath: string;
+  storedFilePath?: string;
+  fileUrl?: string;
+  mimeType?: string;
+  hasOriginalPdf?: boolean;
   processedAt: string;
   sentWhatsappAt?: string;
   sentEmailAt?: string;

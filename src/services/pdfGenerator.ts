@@ -1,89 +1,48 @@
 import { HistoryRecord } from '../types';
+import { pdfStorage } from './pdfStorage';
 
-function createPdfBlobFromRecord(record: HistoryRecord): Blob {
-  const lines = [
-    'REPÚBLICA FEDERATIVA DO BRASIL - NOTA FISCAL DE SERVIÇOS',
-    `NÚMERO DA NOTA: ${record.invoiceNumber || 'S/N'}`,
-    `DATA DE EMISSÃO: ${record.invoiceDate || 'N/A'}`,
-    '------------------------------------------------------------',
-    'DADOS DO CLIENTE / TOMADOR:',
-    `Razao Social / Nome: ${record.clientName}`,
-    `CNPJ / CPF: ${record.cnpj}`,
-    '------------------------------------------------------------',
-    'VALOR DA OPERACAO:',
-    `Valor Total da Nota: ${record.invoiceValueFormatted || 'R$ 0,00'}`,
-    '------------------------------------------------------------',
-    'DETALHES DO PROCESSAMENTO:',
-    `Arquivo Gerado: ${record.generatedFileName}`,
-    `Caminho de Destino: ${record.targetPath}`,
-    `Processado em: ${new Date(record.processedAt).toLocaleString('pt-BR')}`,
-    '------------------------------------------------------------',
-    'DOCUMENTO FISCAL GERADO / ORGANIZADO AUTOMATICAMENTE',
-  ];
-
-  const streamLines = [
-    'BT',
-    '/F1 12 Tf',
-    '50 780 Td',
-    '15 TL',
-  ];
-
-  for (const line of lines) {
-    const escaped = line
-      .replace(/\\/g, '\\\\')
-      .replace(/\(/g, '\\(')
-      .replace(/\)/g, '\\)');
-    streamLines.push(`(${escaped}) '`);
+/**
+ * Recupea o ARQUIVO PDF ORIGINAL da nota fiscal exatamente como foi processado pelo sistema.
+ * Não reconstrói, não altera e não gera um novo resumo.
+ */
+export async function getOriginalInvoicePdfBlob(record: HistoryRecord): Promise<Blob> {
+  // 1. Tenta obter do armazenamento físico IndexedDB pelo ID do registro
+  if (record.id) {
+    const originalBlob = await pdfStorage.getOriginalPdf(record.id);
+    if (originalBlob && originalBlob.size > 0) {
+      return originalBlob;
+    }
   }
-  streamLines.push('ET');
 
-  const streamContent = streamLines.join('\n');
-  const streamLength = streamContent.length;
+  // 2. Tenta obter via URL se o registro contiver fileUrl
+  if (
+    record.fileUrl &&
+    (record.fileUrl.startsWith('blob:') ||
+      record.fileUrl.startsWith('data:') ||
+      record.fileUrl.startsWith('http'))
+  ) {
+    try {
+      const response = await fetch(record.fileUrl);
+      const fetchedBlob = await response.blob();
+      if (fetchedBlob && fetchedBlob.size > 0) {
+        return fetchedBlob;
+      }
+    } catch (e) {
+      console.warn('Não foi possível obter PDF por fileUrl:', e);
+    }
+  }
 
-  const pdfBody = `%PDF-1.4
-1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
-endobj
-2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
-endobj
-3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
-endobj
-4 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
-endobj
-5 0 obj
-<< /Length ${streamLength} >>
-stream
-${streamContent}
-endstream
-endobj
-xref
-0 6
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000227 00000 n 
-0000000305 00000 n 
-trailer
-<< /Size 6 /Root 1 0 R >>
-startxref
-${400 + streamLength}
-%%EOF`;
-
-  return new Blob([pdfBody], { type: 'application/pdf' });
+  // 3. Fallback neutro para registros sem arquivo
+  return new Blob(['%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF'], { type: 'application/pdf' });
 }
 
-export function downloadInvoicePdf(record: HistoryRecord): void {
-  const blob = createPdfBlobFromRecord(record);
+export async function downloadInvoicePdf(record: HistoryRecord): Promise<void> {
+  const blob = await getOriginalInvoicePdfBlob(record);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = record.generatedFileName.endsWith('.pdf')
-    ? record.generatedFileName
-    : `${record.generatedFileName}.pdf`;
+  const fileName = record.generatedFileName || record.originalFileName || 'Nota_Fiscal.pdf';
+  link.download = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -95,11 +54,10 @@ export async function downloadInvoicesZip(records: HistoryRecord[], bundleName: 
   const zip = new JSZip();
 
   for (const record of records) {
-    const blob = createPdfBlobFromRecord(record);
-    const filename = record.generatedFileName.endsWith('.pdf')
-      ? record.generatedFileName
-      : `${record.generatedFileName}.pdf`;
-    zip.file(filename, blob);
+    const blob = await getOriginalInvoicePdfBlob(record);
+    const fileName = record.generatedFileName || record.originalFileName || 'Nota_Fiscal.pdf';
+    const finalName = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+    zip.file(finalName, blob);
   }
 
   const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -124,20 +82,18 @@ export async function shareInvoicePdfOrZip(
 
   if (records.length === 1) {
     const record = records[0];
-    const blob = createPdfBlobFromRecord(record);
-    const filename = record.generatedFileName.endsWith('.pdf')
-      ? record.generatedFileName
-      : `${record.generatedFileName}.pdf`;
-    fileToShare = new File([blob], filename, { type: 'application/pdf' });
+    const blob = await getOriginalInvoicePdfBlob(record);
+    const fileName = record.generatedFileName || record.originalFileName || 'Nota_Fiscal.pdf';
+    const finalName = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+    fileToShare = new File([blob], finalName, { type: 'application/pdf' });
   } else {
     const JSZip = (await import('jszip')).default;
     const zip = new JSZip();
     for (const record of records) {
-      const blob = createPdfBlobFromRecord(record);
-      const filename = record.generatedFileName.endsWith('.pdf')
-        ? record.generatedFileName
-        : `${record.generatedFileName}.pdf`;
-      zip.file(filename, blob);
+      const blob = await getOriginalInvoicePdfBlob(record);
+      const fileName = record.generatedFileName || record.originalFileName || 'Nota_Fiscal.pdf';
+      const finalName = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+      zip.file(finalName, blob);
     }
     const zipBlob = await zip.generateAsync({ type: 'blob' });
     const zipName = `Notas_${bundleName.replace(/[^a-zA-Z0-9]/g, '_')}.zip`;

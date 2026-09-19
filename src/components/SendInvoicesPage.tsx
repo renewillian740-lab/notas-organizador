@@ -533,9 +533,9 @@ export const SendInvoicesPage: React.FC = () => {
                       <div className="flex items-center gap-2 shrink-0">
                         <button
                           type="button"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            downloadInvoicePdf(record);
+                            await downloadInvoicePdf(record);
                           }}
                           title="Baixar arquivo PDF desta nota"
                           className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
@@ -615,7 +615,7 @@ export const SendInvoicesPage: React.FC = () => {
                     } else {
                       // Fallback: download PDF/ZIP and alert
                       if (list.length === 1) {
-                        downloadInvoicePdf(list[0]);
+                        await downloadInvoicePdf(list[0]);
                       } else {
                         await downloadInvoicesZip(list, bundleName);
                       }
@@ -635,7 +635,7 @@ export const SendInvoicesPage: React.FC = () => {
                   onClick={async () => {
                     const list = selectedRecords.length > 0 ? selectedRecords : activeRecords;
                     if (list.length === 1) {
-                      downloadInvoicePdf(list[0]);
+                      await downloadInvoicePdf(list[0]);
                     } else if (list.length > 1) {
                       const name = targetClient ? targetClient.customName : 'Clientes';
                       await downloadInvoicesZip(list, name);
