@@ -49,6 +49,8 @@ class LocalDBService {
     customName: string;
     razaoSocial?: string;
     nomeFantasia?: string;
+    email?: string;
+    phone?: string;
   }): Client {
     const clean = cleanCNPJ(clientData.cnpj);
     const clients = this.getClients();
@@ -63,6 +65,8 @@ class LocalDBService {
         customName: clientData.customName.trim() || existing.customName,
         razaoSocial: clientData.razaoSocial?.trim() || existing.razaoSocial,
         nomeFantasia: clientData.nomeFantasia?.trim() || existing.nomeFantasia,
+        email: clientData.email !== undefined ? clientData.email.trim() : existing.email,
+        phone: clientData.phone !== undefined ? clientData.phone.trim() : existing.phone,
         updatedAt: now,
       };
       clients[existingIndex] = updated;
@@ -76,6 +80,8 @@ class LocalDBService {
         customName: clientData.customName.trim(),
         razaoSocial: clientData.razaoSocial?.trim(),
         nomeFantasia: clientData.nomeFantasia?.trim(),
+        email: clientData.email?.trim(),
+        phone: clientData.phone?.trim(),
         notesCount: 0,
         createdAt: now,
         updatedAt: now,
@@ -139,6 +145,30 @@ class LocalDBService {
 
   public clearHistory(): void {
     localStorage.removeItem(HISTORY_STORAGE_KEY);
+  }
+
+  public updateHistoryDispatchStatus(
+    recordIds: string[],
+    channel: 'whatsapp' | 'email'
+  ): void {
+    const history = this.getHistory();
+    const now = new Date().toISOString();
+    let updated = false;
+
+    for (const item of history) {
+      if (recordIds.includes(item.id)) {
+        if (channel === 'whatsapp') {
+          item.sentWhatsappAt = now;
+        } else {
+          item.sentEmailAt = now;
+        }
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      this.saveHistory(history);
+    }
   }
 
   // ===================== CONFIGURAÇÕES =====================

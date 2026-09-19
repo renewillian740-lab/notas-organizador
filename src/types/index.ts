@@ -20,6 +20,8 @@ export interface Client {
   customName: string; // Nome definido pelo usuário ou aceito
   razaoSocial?: string;
   nomeFantasia?: string;
+  email?: string;
+  phone?: string;
   notesCount: number;
   createdAt: string;
   updatedAt: string;
@@ -120,6 +122,8 @@ export interface HistoryRecord {
   identificationMethod: IdentificationMethod;
   targetPath: string;
   processedAt: string;
+  sentWhatsappAt?: string;
+  sentEmailAt?: string;
   diagnosticSummary: string;
   rawTextSnippet?: string;
 }

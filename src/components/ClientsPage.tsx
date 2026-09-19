@@ -27,6 +27,8 @@ export const ClientsPage: React.FC = () => {
   const [customNameInput, setCustomNameInput] = useState('');
   const [razaoSocialInput, setRazaoSocialInput] = useState('');
   const [nomeFantasiaInput, setNomeFantasiaInput] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [phoneInput, setPhoneInput] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
   const loadClients = () => {
@@ -58,6 +60,8 @@ export const ClientsPage: React.FC = () => {
     setCustomNameInput('');
     setRazaoSocialInput('');
     setNomeFantasiaInput('');
+    setEmailInput('');
+    setPhoneInput('');
     setErrorMessage('');
     setIsModalOpen(true);
   };
@@ -68,6 +72,8 @@ export const ClientsPage: React.FC = () => {
     setCustomNameInput(client.customName);
     setRazaoSocialInput(client.razaoSocial || '');
     setNomeFantasiaInput(client.nomeFantasia || '');
+    setEmailInput(client.email || '');
+    setPhoneInput(client.phone || '');
     setErrorMessage('');
     setIsModalOpen(true);
   };
@@ -98,6 +104,8 @@ export const ClientsPage: React.FC = () => {
       customName: customNameInput.trim(),
       razaoSocial: razaoSocialInput.trim() || undefined,
       nomeFantasia: nomeFantasiaInput.trim() || undefined,
+      email: emailInput.trim() || undefined,
+      phone: phoneInput.trim() || undefined,
     });
 
     loadClients();
@@ -352,6 +360,36 @@ export const ClientsPage: React.FC = () => {
                   placeholder="Ex: ACME Log"
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    E-mail do Cliente (para envio de notas)
+                  </label>
+                  <input
+                    id="input-modal-client-email"
+                    type="email"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    placeholder="financeiro@empresa.com"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    WhatsApp / Celular (com DDD)
+                  </label>
+                  <input
+                    id="input-modal-client-phone"
+                    type="text"
+                    value={phoneInput}
+                    onChange={(e) => setPhoneInput(e.target.value)}
+                    placeholder="(11) 99999-9999"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex justify-end gap-2.5">

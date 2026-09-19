@@ -12,6 +12,9 @@ const ProcessInvoices = lazy(() =>
 const ClientsPage = lazy(() =>
   import('./components/ClientsPage').then((m) => ({ default: m.ClientsPage }))
 );
+const SendInvoicesPage = lazy(() =>
+  import('./components/SendInvoicesPage').then((m) => ({ default: m.SendInvoicesPage }))
+);
 const HistoryPage = lazy(() =>
   import('./components/HistoryPage').then((m) => ({ default: m.HistoryPage }))
 );
@@ -35,7 +38,7 @@ function PageLoadingFallback() {
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<
-    'dashboard' | 'process' | 'clients' | 'history' | 'settings'
+    'dashboard' | 'process' | 'clients' | 'dispatch' | 'history' | 'settings'
   >('dashboard');
 
   const [clientsCount, setClientsCount] = useState(0);
@@ -114,6 +117,8 @@ export default function App() {
           )}
 
           {currentTab === 'clients' && <ClientsPage />}
+
+          {currentTab === 'dispatch' && <SendInvoicesPage />}
 
           {currentTab === 'history' && (
             <HistoryPage
