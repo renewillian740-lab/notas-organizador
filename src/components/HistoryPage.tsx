@@ -234,7 +234,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               <History className="w-6 h-6 text-blue-600 dark:text-blue-400" /> Histórico de Processamento
             </h1>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
-              <Database className="w-3 h-3" /> Armazenamento Seguro
+              <Database className="w-3 h-3" /> Armazenamento Local
             </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">

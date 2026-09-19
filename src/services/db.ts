@@ -45,28 +45,6 @@ class DBService {
   }
 
   public async fetchRemoteClients(): Promise<Client[]> {
-    if (this.isSyncingClients) return this.getClients();
-    this.isSyncingClients = true;
-    try {
-      const res = await fetch('/api/clients');
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          const localClients = this.getClients();
-          // Mescla com clientes locais
-          const map = new Map<string, Client>();
-          localClients.forEach((c) => map.set(c.cleanCnpj, c));
-          json.data.forEach((c: Client) => map.set(c.cleanCnpj, { ...map.get(c.cleanCnpj), ...c }));
-          const merged = Array.from(map.values());
-          this.saveClients(merged);
-          return merged;
-        }
-      }
-    } catch (e) {
-      console.warn('Não foi possível sincronizar clientes com Supabase:', e);
-    } finally {
-      this.isSyncingClients = false;
-    }
     return this.getClients();
   }
 
@@ -122,24 +100,12 @@ class DBService {
     }
 
     this.saveClients(clients);
-
-    // Sincroniza em segundo plano com o Supabase
-    fetch('/api/clients', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(savedClient),
-    }).catch((e) => console.warn('Falha ao persistir cliente no Supabase:', e));
-
     return savedClient;
   }
 
   public deleteClient(id: string): void {
     const clients = this.getClients().filter((c) => c.id !== id);
     this.saveClients(clients);
-
-    fetch(`/api/clients/${id}`, { method: 'DELETE' }).catch((e) =>
-      console.warn('Erro ao deletar cliente no Supabase:', e)
-    );
   }
 
   public incrementClientStats(cleanCnpj: string, amount: number | null): void {
@@ -152,12 +118,6 @@ class DBService {
       }
       client.updatedAt = new Date().toISOString();
       this.saveClients(clients);
-
-      fetch('/api/clients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(client),
-      }).catch((e) => console.warn('Erro ao atualizar estatísticas do cliente no Supabase:', e));
     }
   }
 
@@ -186,76 +146,24 @@ class DBService {
    * Sincroniza e busca registros persistidos do Supabase
    */
   public async fetchRemoteHistory(): Promise<HistoryRecord[]> {
-    if (this.isSyncingInvoices) return this.getHistory();
-    this.isSyncingInvoices = true;
-    try {
-      const res = await fetch('/api/invoices');
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          const localHistory = this.getHistory();
-          // Mescla itens do Supabase com itens locais
-          const map = new Map<string, HistoryRecord>();
-          localHistory.forEach((item) => map.set(item.id, item));
-          json.data.forEach((item: HistoryRecord) => {
-            map.set(item.id, { ...map.get(item.id), ...item, syncedToSupabase: true });
-          });
-          const merged = Array.from(map.values()).sort(
-            (a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime()
-          );
-          this.saveHistory(merged);
-          return merged;
-        }
-      }
-    } catch (e) {
-      console.warn('Não foi possível sincronizar notas com Supabase:', e);
-    } finally {
-      this.isSyncingInvoices = false;
-    }
     return this.getHistory();
   }
 
-  /**
-   * Adiciona registro de nota fiscal localmente e persiste no Supabase
-   */
   public addHistoryRecord(record: Omit<HistoryRecord, 'id' | 'processedAt'>): HistoryRecord {
     const history = this.getHistory();
     const newRecord: HistoryRecord = {
       ...record,
       id: 'hist_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
       processedAt: new Date().toISOString(),
-      syncedToSupabase: false,
+      syncedToSupabase: true,
     };
     history.unshift(newRecord); // Mais recentes primeiro
     this.saveHistory(history);
-
-    // Persiste no Supabase
-    fetch('/api/invoices', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newRecord),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.savedToRemote) {
-          const current = this.getHistory();
-          const target = current.find((h) => h.id === newRecord.id);
-          if (target) {
-            target.syncedToSupabase = true;
-            this.saveHistory(current);
-          }
-        }
-      })
-      .catch((e) => console.warn('Erro ao persistir nota no Supabase:', e));
-
     return newRecord;
   }
 
   public clearHistory(): void {
     localStorage.removeItem(HISTORY_STORAGE_KEY);
-    fetch('/api/invoices', { method: 'DELETE' }).catch((e) =>
-      console.warn('Erro ao limpar notas no Supabase:', e)
-    );
   }
 
   public updateHistoryDispatchStatus(
@@ -280,13 +188,6 @@ class DBService {
     if (updated) {
       this.saveHistory(history);
     }
-
-    // Atualiza no Supabase
-    fetch('/api/invoices/dispatch', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recordIds, channel }),
-    }).catch((e) => console.warn('Erro ao atualizar envio no Supabase:', e));
   }
 
   public updateHistoryRecord(id: string, updates: Partial<HistoryRecord>): HistoryRecord | null {
@@ -300,13 +201,6 @@ class DBService {
     };
     history[index] = updated;
     this.saveHistory(history);
-
-    // Sincroniza atualização no Supabase
-    fetch('/api/invoices', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated),
-    }).catch((e) => console.warn('Erro ao atualizar nota fiscal no Supabase:', e));
 
     return updated;
   }
@@ -414,15 +308,6 @@ class DBService {
     });
     this.saveClients(finalClients);
 
-    // 4. Sincroniza em lote com o Supabase
-    updatedHistory.forEach((rec) => {
-      fetch('/api/invoices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(rec),
-      }).catch(() => {});
-    });
-
     return {
       fixedCount,
       newClientsCount,
@@ -456,7 +341,7 @@ class DBService {
   public exportBackup(): string {
     const backup = {
       version: 2,
-      storageProvider: 'supabase',
+      storageProvider: 'local',
       exportedAt: new Date().toISOString(),
       clients: this.getClients(),
       history: this.getHistory(),
@@ -509,25 +394,6 @@ class DBService {
       }
       if (opts.resetSettings) {
         localStorage.removeItem(SETTINGS_STORAGE_KEY);
-      }
-
-      // Comunica ao servidor backend para limpar Supabase e caches em memória
-      const response = await fetch('/api/system/reset-all', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clearHistory: opts.clearHistory,
-          clearClients: opts.clearClients,
-          clearStorage: opts.clearStorage,
-        }),
-      });
-
-      if (response.ok) {
-        const json = await response.json();
-        return {
-          success: true,
-          message: json.message || 'Sistema e arquivos foram zerados com sucesso.',
-        };
       }
     } catch (e: any) {
       console.warn('Aviso durante reset:', e);
