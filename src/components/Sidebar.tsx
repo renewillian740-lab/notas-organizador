@@ -12,8 +12,8 @@ import {
 } from 'lucide-react';
 
 interface SidebarProps {
-  currentTab: 'dashboard' | 'process' | 'clients' | 'dispatch' | 'history' | 'settings';
-  onSelectTab: (tab: 'dashboard' | 'process' | 'clients' | 'dispatch' | 'history' | 'settings') => void;
+  currentTab: 'dashboard' | 'process' | 'clients' | 'history' | 'settings';
+  onSelectTab: (tab: 'dashboard' | 'process' | 'clients' | 'history' | 'settings') => void;
   pendingReviewCount: number;
   clientsCount: number;
   historyCount: number;
@@ -44,12 +44,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Clientes',
       icon: Users,
       badge: clientsCount > 0 ? { text: `${clientsCount}`, color: 'bg-slate-100 text-slate-700' } : null,
-    },
-    {
-      id: 'dispatch',
-      label: 'Enviar Notas',
-      icon: Send,
-      badge: null,
     },
     {
       id: 'history',
