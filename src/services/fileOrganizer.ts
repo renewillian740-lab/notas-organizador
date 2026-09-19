@@ -65,6 +65,15 @@ export function generateTargetFolderPath(
 
   let folderPath = '';
   switch (settings.folderStructure) {
+    case 'MES_CLIENTE':
+      folderPath = `${mesExtenso}/${cliente}`;
+      break;
+    case 'CLIENTE_MES':
+      folderPath = `${cliente}/${mesExtenso}`;
+      break;
+    case 'CLIENTE_DIRETO':
+      folderPath = `${cliente}`;
+      break;
     case 'ANO_MES_CLIENTE':
       folderPath = `${ano}/${mesExtenso}/${cliente}`;
       break;
@@ -75,7 +84,7 @@ export function generateTargetFolderPath(
       folderPath = `${ano}/${cliente}`;
       break;
     default:
-      folderPath = `${ano}/${mesExtenso}/${cliente}`;
+      folderPath = `${mesExtenso}/${cliente}`;
   }
 
   return { folderPath, clientFolder: cliente };
@@ -151,8 +160,10 @@ export async function saveOrganizedFilesToDirectoryHandle(
     file: File;
     targetFolderPath: string;
     finalFileName: string;
+    originalFileName?: string;
   }>,
-  onProgress?: (current: number, total: number, currentFileName: string) => void
+  onProgress?: (current: number, total: number, currentFileName: string) => void,
+  options?: { removeRootOriginalAfterOrganize?: boolean }
 ): Promise<{ successCount: number; errorCount: number }> {
   let successCount = 0;
   let errorCount = 0;
@@ -172,12 +183,21 @@ export async function saveOrganizedFilesToDirectoryHandle(
         currentDir = await currentDir.getDirectoryHandle(segment, { create: true });
       }
 
-      // Cria o novo arquivo cópia renomeado
+      // Cria o novo arquivo cópia renomeado na subpasta
       const fileHandle = await currentDir.getFileHandle(item.finalFileName, { create: true });
       const writable = await fileHandle.createWritable();
       const arrayBuffer = await item.file.arrayBuffer();
       await writable.write(arrayBuffer);
       await writable.close();
+
+      // Se solicitado limpar da raiz da pasta após organizar na subpasta
+      if (options?.removeRootOriginalAfterOrganize && item.originalFileName) {
+        try {
+          await targetDirHandle.removeEntry(item.originalFileName);
+        } catch (removeErr) {
+          console.warn(`Não foi possível remover da raiz: ${item.originalFileName}`, removeErr);
+        }
+      }
 
       successCount++;
     } catch (err) {

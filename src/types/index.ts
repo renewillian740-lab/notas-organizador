@@ -128,7 +128,13 @@ export interface AppSettings {
   sourceDirectoryName: string;
   targetDirectoryName: string;
   namingPattern: string; // ex: NF_[NUMERO]_[CLIENTE]_[VALOR]_[DATA].pdf
-  folderStructure: 'ANO_MES_CLIENTE' | 'CLIENTE_ANO_MES' | 'ANO_CLIENTE';
+  folderStructure:
+    | 'MES_CLIENTE'
+    | 'CLIENTE_MES'
+    | 'CLIENTE_DIRETO'
+    | 'ANO_MES_CLIENTE'
+    | 'CLIENTE_ANO_MES'
+    | 'ANO_CLIENTE';
   duplicateHandling: 'NUMBER_SUFFIX' | 'SKIP';
   autoRegisterNewClients: boolean;
   alertOnAmbiguity: boolean;

@@ -9,16 +9,15 @@ import {
   AlertTriangle,
   XCircle,
   Eye,
-  Edit3,
-  Download,
-  FolderTree,
-  Sparkles,
-  ShieldCheck,
+  Archive,
   RefreshCw,
   Clock,
   Layers,
-  Archive,
-  ArrowRight,
+  Sparkles,
+  ShieldCheck,
+  FolderTree,
+  Filter,
+  Check,
 } from 'lucide-react';
 import { InvoiceItem, ExtractedInvoiceData } from '../types';
 import { analyzeInvoicePDF } from '../services/pdfExtractor';
@@ -36,17 +35,20 @@ import { InvoiceDetailModal } from './InvoiceDetailModal';
 
 interface ProcessInvoicesProps {
   onProcessingCompleted: () => void;
-  externalItems?: File[];
 }
 
 export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
   onProcessingCompleted,
-  externalItems,
 }) => {
+  // Modo de operação: 'single_folder' (jogar notas na pasta de destino) ou 'separate_folders'
+  const [folderMode, setFolderMode] = useState<'single_folder' | 'separate_folders'>('single_folder');
+
   const [sourceFiles, setSourceFiles] = useState<File[]>([]);
   const [sourceDirName, setSourceDirName] = useState<string>('Nenhuma pasta selecionada');
-  const [targetDirName, setTargetDirName] = useState<string>('Pasta Destino Automática');
+  const [targetDirName, setTargetDirName] = useState<string>('Mesma pasta (Criação de subpastas na raiz)');
   const [targetDirHandle, setTargetDirHandle] = useState<any>(null);
+  const [skippedSubfolderFilesCount, setSkippedSubfolderFilesCount] = useState<number>(0);
+  const [removeRootAfterOrganize, setRemoveRootAfterOrganize] = useState<boolean>(false);
 
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -63,50 +65,87 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
 
-  // Manipulador de seleção de múltiplos arquivos PDF
+  // Manipulador de seleção de múltiplos arquivos PDF soltos
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const pdfs = Array.from(e.target.files).filter(
         (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
       );
+      setSkippedSubfolderFilesCount(0);
       setSourceFiles(pdfs);
-      setSourceDirName(`${pdfs.length} arquivo(s) PDF selecionado(s)`);
+      setSourceDirName(`${pdfs.length} arquivo(s) PDF`);
       prepareItems(pdfs);
     }
   };
 
-  // Manipulador de pasta de origem (input folder)
+  // Manipulador de pasta (HTML input com filtro estrito de raiz)
   const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const pdfs = Array.from(e.target.files).filter(
-        (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
-      );
-      const firstPath = (e.target.files[0] as any).webkitRelativePath || '';
-      const folderName = firstPath.split('/')[0] || 'Pasta de Origem';
+      const allFiles = Array.from(e.target.files);
+      const rootPdfs: File[] = [];
+      let skippedInSubfolders = 0;
 
-      setSourceFiles(pdfs);
-      setSourceDirName(`${folderName} (${pdfs.length} PDFs)`);
-      prepareItems(pdfs);
+      for (const file of allFiles) {
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          const relPath = (file as any).webkitRelativePath || '';
+          if (relPath) {
+            const parts = relPath.split('/');
+            // Apenas arquivo filho direto da pasta selecionada (ex: "MinhaPasta/nota.pdf" -> 2 partes)
+            if (parts.length === 2) {
+              rootPdfs.push(file);
+            } else {
+              skippedInSubfolders++;
+            }
+          } else {
+            rootPdfs.push(file);
+          }
+        }
+      }
+
+      const firstPath = (allFiles[0] as any).webkitRelativePath || '';
+      const folderName = firstPath.split('/')[0] || 'Pasta Selecionada';
+
+      setSkippedSubfolderFilesCount(skippedInSubfolders);
+      setSourceFiles(rootPdfs);
+      setSourceDirName(`${folderName} (${rootPdfs.length} PDFs na raiz)`);
+      if (folderMode === 'single_folder') {
+        setTargetDirName(`${folderName} (Criará subpastas na raiz)`);
+      }
+      prepareItems(rootPdfs);
     }
   };
 
-  // Seleção nativa da pasta de origem via File System Access API
-  const handlePickSourceDirectoryNative = async () => {
+  // Seleção nativa da pasta via File System Access API (Lê APENAS arquivos da raiz, ignorando subpastas)
+  const handlePickDirectoryNative = async (isSingleFolderDestination: boolean) => {
     try {
       if ('showDirectoryPicker' in window) {
         const dirHandle = await (window as any).showDirectoryPicker({
-          mode: 'read',
+          mode: 'readwrite',
         });
-        const files: File[] = [];
+
+        const rootPdfs: File[] = [];
+        let subfoldersCount = 0;
+
+        // Itera estritamente na raiz do diretório (não entra nas subpastas)
         for await (const entry of dirHandle.values()) {
           if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.pdf')) {
             const file = await entry.getFile();
-            files.push(file);
+            rootPdfs.push(file);
+          } else if (entry.kind === 'directory') {
+            subfoldersCount++;
           }
         }
-        setSourceFiles(files);
-        setSourceDirName(`${dirHandle.name} (${files.length} PDFs)`);
-        prepareItems(files);
+
+        setSkippedSubfolderFilesCount(subfoldersCount);
+        setSourceFiles(rootPdfs);
+        setSourceDirName(`${dirHandle.name} (${rootPdfs.length} PDFs na raiz)`);
+        setTargetDirHandle(dirHandle);
+
+        if (isSingleFolderDestination || folderMode === 'single_folder') {
+          setTargetDirName(`[Diretório do Disco] ${dirHandle.name}`);
+        }
+
+        prepareItems(rootPdfs);
       } else {
         folderInputRef.current?.click();
       }
@@ -117,7 +156,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
     }
   };
 
-  // Seleção nativa da pasta de destino via File System Access API
+  // Seleção nativa de pasta de destino separada
   const handlePickTargetDirectoryNative = async () => {
     try {
       if ('showDirectoryPicker' in window) {
@@ -139,13 +178,16 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
   // Carregar exemplos de notas fiscais reais para teste imediato
   const handleLoadSamples = () => {
     const samples = generateSampleInvoiceFiles();
+    setSkippedSubfolderFilesCount(0);
     setSourceFiles(samples);
     setSourceDirName(`Amostras Fiscais de Demonstração (5 PDFs Reais)`);
+    if (folderMode === 'single_folder') {
+      setTargetDirName('Pacote ZIP / Pasta Selecionada');
+    }
     prepareItems(samples);
   };
 
   const prepareItems = (files: File[]) => {
-    const settings = db.getSettings();
     const items: InvoiceItem[] = files.map((file, idx) => ({
       id: `item_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 5)}`,
       file,
@@ -198,7 +240,6 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
           status = 'REVISAR';
           statusMessage = 'Cliente não identificado / Ambiguidade';
         } else if (!extracted.selectedClient.isPreRegistered && settings.autoRegisterNewClients) {
-          // Auto-registra se configurado
           db.addOrUpdateClient({
             cnpj: extracted.selectedClient.cleanCnpj,
             customName: extracted.selectedClient.name,
@@ -273,7 +314,6 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
       prev.map((item) => {
         if (item.id !== itemId) return item;
 
-        // Se solicitado, salva cliente no cadastro permanente
         if (updatedData.registerNewClient && updatedData.cnpj) {
           db.addOrUpdateClient({
             cnpj: updatedData.cnpj,
@@ -281,7 +321,6 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
           });
         }
 
-        // Atualiza os dados extraídos
         const currentExtracted: ExtractedInvoiceData = item.extractedData || {
           numeroNota: updatedData.manualNumber || 'S_N',
           dataEmissao: updatedData.manualDate || '18/09/2026',
@@ -348,7 +387,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
     );
   };
 
-  // Executar organização e cópias seguras
+  // Executar organização e criação de novas subpastas
   const handleExecuteOrganization = async () => {
     if (invoiceItems.length === 0) return;
 
@@ -367,18 +406,21 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
 
     try {
       if (targetDirHandle) {
-        // Gravação direta no diretório do sistema operacional via File System Access API
+        // Gravação direta criando subpastas na pasta selecionada
         const result = await saveOrganizedFilesToDirectoryHandle(
           targetDirHandle,
           itemsToExport.map((it) => ({
             file: it.file,
             targetFolderPath: it.targetFolderPath,
             finalFileName: it.generatedFileName,
-          }))
+            originalFileName: it.originalFileName,
+          })),
+          undefined,
+          { removeRootOriginalAfterOrganize: removeRootAfterOrganize && folderMode === 'single_folder' }
         );
 
         setExportSuccessMessage(
-          `Sucesso! ${result.successCount} notas foram copiadas e organizadas com sucesso diretamente em "${targetDirHandle.name}".`
+          `Sucesso! ${result.successCount} notas foram organizadas em novas subpastas criadas dentro de "${targetDirHandle.name}".`
         );
       } else {
         // Empacotamento em ZIP com a hierarquia completa de pastas
@@ -400,7 +442,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
         URL.revokeObjectURL(url);
 
         setExportSuccessMessage(
-          `Sucesso! ${itemsToExport.length} notas foram organizadas no pacote ZIP estruturado (ANO / MÊS / CLIENTE).`
+          `Sucesso! ${itemsToExport.length} notas foram organizadas no pacote ZIP estruturado (MÊS / CLIENTE).`
         );
       }
 
@@ -437,7 +479,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
       setInvoiceItems((prev) =>
         prev.map((item) => {
           if (itemsToExport.some((exp) => exp.id === item.id)) {
-            return { ...item, status: 'PROCESSADO', statusMessage: 'Cópia organizada e gravada' };
+            return { ...item, status: 'PROCESSADO', statusMessage: 'Cópia organizada na subpasta' };
           }
           return item;
         })
@@ -466,10 +508,10 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-            <FileSpreadsheet className="w-6 h-6 text-blue-600" /> Processamento e Organização de Notas
+            <FolderTree className="w-6 h-6 text-blue-600" /> Processamento e Organização de Notas
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Selecione a pasta de origem e destino para analisar, identificar clientes e gerar cópias organizadas.
+            Analisa notas soltas na raiz da pasta e cria automaticamente as subpastas por Ano / Mês / Cliente.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -483,79 +525,177 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
         </div>
       </div>
 
+      {/* Mode Selector Tabs */}
+      <div className="flex items-center gap-2 p-1.5 bg-slate-200/80 rounded-2xl w-fit">
+        <button
+          onClick={() => setFolderMode('single_folder')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            folderMode === 'single_folder'
+              ? 'bg-white text-blue-600 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <FolderOutput className="w-4 h-4" /> Jogar Notas na Pasta de Destino (Pasta Única)
+        </button>
+        <button
+          onClick={() => setFolderMode('separate_folders')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            folderMode === 'separate_folders'
+              ? 'bg-white text-blue-600 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <FolderInput className="w-4 h-4" /> Pastas Separadas (Origem → Destino)
+        </button>
+      </div>
+
       {/* Directory Selector Bar */}
       <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-xs space-y-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* PASTA DE ORIGEM */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <FolderInput className="w-4 h-4 text-blue-600" /> Pasta de Origem
-              </span>
-              <span className="text-[11px] font-semibold text-slate-500">
-                {sourceFiles.length} PDFs prontos
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                readOnly
-                value={sourceDirName}
-                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 truncate"
-              />
-              <button
-                id="btn-pick-source-folder"
-                onClick={handlePickSourceDirectoryNative}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shrink-0"
-              >
-                <FolderOpen className="w-3.5 h-3.5" /> Selecionar pasta
-              </button>
-              <input
-                type="file"
-                ref={folderInputRef}
-                {...({ webkitdirectory: '', directory: '' } as any)}
-                multiple
-                onChange={handleFolderSelect}
-                className="hidden"
-              />
-              <input
-                type="file"
-                ref={fileInputRef}
-                multiple
-                accept=".pdf,application/pdf"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-            </div>
-          </div>
-
-          {/* PASTA DE DESTINO */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <FolderOutput className="w-4 h-4 text-emerald-600" /> Pasta de Destino
-              </span>
-              <span className="text-[11px] font-semibold text-emerald-700">
-                {targetDirHandle ? 'Gravação Direta' : 'ZIP Estruturado'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                readOnly
-                value={targetDirName}
-                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 truncate"
-              />
-              <button
-                id="btn-pick-target-folder"
-                onClick={handlePickTargetDirectoryNative}
-                className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shrink-0"
-              >
-                <FolderOpen className="w-3.5 h-3.5" /> Selecionar pasta
-              </button>
-            </div>
+        {/* Info Banner on Root Scanning Rule */}
+        <div className="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200/80 text-blue-900 text-xs flex items-start gap-3">
+          <Filter className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <span className="font-bold block">Filtro Estrito da Raiz da Pasta:</span>
+            <p className="text-blue-800 leading-relaxed">
+              O sistema lê <strong>apenas os arquivos PDF que estão soltos na raiz</strong> da pasta selecionada. Arquivos que já se encontram dentro de subpastas existentes (ex: <code className="bg-blue-100 px-1 py-0.5 rounded">2026/09 - SETEMBRO/...</code>) são automaticamente <strong>ignorados</strong> para evitar reprocessamento ou duplicidades.
+            </p>
           </div>
         </div>
+
+        {folderMode === 'single_folder' ? (
+          /* Modo Pasta Única: onde o usuário joga as notas soltas */
+          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <FolderOpen className="w-4 h-4 text-blue-600" /> Pasta Principal / Destino das Notas
+                </span>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Selecione a pasta onde você joga as novas notas fiscais não processadas.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  id="btn-pick-single-folder"
+                  onClick={() => handlePickDirectoryNative(true)}
+                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-600/20 flex items-center gap-2"
+                >
+                  <FolderOpen className="w-4 h-4" /> Selecionar Pasta no Computador
+                </button>
+              </div>
+            </div>
+
+            <div className="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+              <span className="font-semibold text-slate-800 truncate">{sourceDirName}</span>
+              {sourceFiles.length > 0 && (
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold shrink-0">
+                  {sourceFiles.length} PDFs soltos na raiz
+                </span>
+              )}
+            </div>
+
+            {skippedSubfolderFilesCount > 0 && (
+              <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>
+                  {skippedSubfolderFilesCount} subpastas/arquivos já organizados foram preservados e ignorados na análise.
+                </span>
+              </div>
+            )}
+
+            {/* Toggle de limpeza opcional da raiz */}
+            <div className="pt-2 border-t border-slate-200 flex items-start gap-2.5">
+              <input
+                type="checkbox"
+                id="check-remove-root-file"
+                checked={removeRootAfterOrganize}
+                onChange={(e) => setRemoveRootAfterOrganize(e.target.checked)}
+                className="mt-0.5 w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+              />
+              <label htmlFor="check-remove-root-file" className="text-xs text-slate-600 cursor-pointer">
+                <span className="font-bold text-slate-800 block">
+                  Mover da raiz para a subpasta (remover o arquivo solto da raiz após criar a cópia organizada)
+                </span>
+                Mantém a raiz da sua pasta limpa, contendo apenas as subpastas organizadas.
+              </label>
+            </div>
+          </div>
+        ) : (
+          /* Modo Pastas Separadas */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* PASTA DE ORIGEM */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <FolderInput className="w-4 h-4 text-blue-600" /> Pasta de Origem (Lê apenas raiz)
+                </span>
+                <span className="text-[11px] font-semibold text-slate-500">
+                  {sourceFiles.length} PDFs na raiz
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={sourceDirName}
+                  className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 truncate"
+                />
+                <button
+                  id="btn-pick-source-folder"
+                  onClick={() => handlePickDirectoryNative(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shrink-0"
+                >
+                  <FolderOpen className="w-3.5 h-3.5" /> Selecionar
+                </button>
+              </div>
+            </div>
+
+            {/* PASTA DE DESTINO */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <FolderOutput className="w-4 h-4 text-emerald-600" /> Pasta de Destino (Subpastas)
+                </span>
+                <span className="text-[11px] font-semibold text-emerald-700">
+                  {targetDirHandle ? 'Gravação Direta' : 'ZIP Estruturado'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={targetDirName}
+                  className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 truncate"
+                />
+                <button
+                  id="btn-pick-target-folder"
+                  onClick={handlePickTargetDirectoryNative}
+                  className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shrink-0"
+                >
+                  <FolderOpen className="w-3.5 h-3.5" /> Selecionar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Hidden inputs for browser file input compatibility */}
+        <input
+          type="file"
+          ref={folderInputRef}
+          {...({ webkitdirectory: '', directory: '' } as any)}
+          multiple
+          onChange={handleFolderSelect}
+          className="hidden"
+        />
+        <input
+          type="file"
+          ref={fileInputRef}
+          multiple
+          accept=".pdf,application/pdf"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
 
         {/* Action Trigger Bar */}
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100">
@@ -597,11 +737,11 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
             >
               {isExporting ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" /> Organizando Cópias...
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Organizando e Criando Subpastas...
                 </>
               ) : (
                 <>
-                  <Archive className="w-4 h-4" /> ORGANIZAR E SALVAR CÓPIAS ({processedSuccessCount})
+                  <Archive className="w-4 h-4" /> CRIAR SUBPASTAS & ORGANIZAR ({processedSuccessCount})
                 </>
               )}
             </button>
@@ -613,7 +753,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
           <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-2 animate-in fade-in">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-blue-900">
-                Processando... {analyzedCount} de {totalToAnalyze} notas
+                Processando... {analyzedCount} de {totalToAnalyze} notas da raiz
               </span>
               <span className="text-blue-700 font-medium truncate max-w-xs">
                 {currentProcessingFile}
@@ -652,7 +792,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
               Tabela de Notas Analisadas
             </h2>
             <p className="text-xs text-slate-500 font-medium">
-              Conferência dos dados estruturados extraídos antes da geração das cópias renomeadas
+              Conferência dos dados e da subpasta de destino que será criada dentro da pasta principal
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs font-semibold">
@@ -669,7 +809,8 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
               <tr>
-                <th className="py-3.5 px-6">Arquivo</th>
+                <th className="py-3.5 px-6">Arquivo Original / Renomeado</th>
+                <th className="py-3.5 px-6">Subpasta a Criar</th>
                 <th className="py-3.5 px-6">Cliente Identificado</th>
                 <th className="py-3.5 px-6">CNPJ</th>
                 <th className="py-3.5 px-6">Número</th>
@@ -702,6 +843,11 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
                             </span>
                           )}
                         </div>
+                      </td>
+                      <td className="py-3.5 px-6">
+                        <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-800 font-mono text-[11px] font-semibold block truncate max-w-[200px]" title={item.targetFolderPath}>
+                          {item.targetFolderPath}
+                        </span>
                       </td>
                       <td className="py-3.5 px-6">
                         <div className="flex items-center gap-1.5">
@@ -757,11 +903,11 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={9} className="py-12 text-center text-slate-400">
                     <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
                     <p className="font-medium">Nenhum arquivo na fila de processamento.</p>
                     <p className="text-[11px] mt-1">
-                      Selecione uma pasta com notas fiscais em PDF ou clique em &quot;Carregar 5 Notas de Exemplo&quot;.
+                      Selecione a pasta onde você jogou as notas fiscais em PDF ou clique em &quot;Carregar 5 Notas de Exemplo&quot;.
                     </p>
                   </td>
                 </tr>
@@ -790,7 +936,3 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
     </div>
   );
 };
-
-function FileSpreadsheet(props: any) {
-  return <FolderTree {...props} />;
-}

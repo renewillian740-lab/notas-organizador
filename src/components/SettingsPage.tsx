@@ -120,7 +120,75 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
             <FolderTree className="w-4 h-4 text-blue-600" /> Estrutura de Pastas de Destino
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <label
+              className={`p-4 rounded-xl border cursor-pointer text-xs transition-all ${
+                settings.folderStructure === 'MES_CLIENTE'
+                  ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20'
+                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+              }`}
+            >
+              <input
+                type="radio"
+                name="folderStructure"
+                value="MES_CLIENTE"
+                checked={settings.folderStructure === 'MES_CLIENTE'}
+                onChange={() => setSettings({ ...settings, folderStructure: 'MES_CLIENTE' })}
+                className="sr-only"
+              />
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-bold text-slate-900">MÊS / CLIENTE</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
+                  Padrão (Pasta do Ano)
+                </span>
+              </div>
+              <span className="text-slate-500 font-mono text-[11px] block">
+                09 - SETEMBRO / ACME LOG / NF_...pdf
+              </span>
+            </label>
+
+            <label
+              className={`p-4 rounded-xl border cursor-pointer text-xs transition-all ${
+                settings.folderStructure === 'CLIENTE_MES'
+                  ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20'
+                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+              }`}
+            >
+              <input
+                type="radio"
+                name="folderStructure"
+                value="CLIENTE_MES"
+                checked={settings.folderStructure === 'CLIENTE_MES'}
+                onChange={() => setSettings({ ...settings, folderStructure: 'CLIENTE_MES' })}
+                className="sr-only"
+              />
+              <span className="font-bold text-slate-900 block mb-1">CLIENTE / MÊS</span>
+              <span className="text-slate-500 font-mono text-[11px] block">
+                ACME LOG / 09 - SETEMBRO / NF_...pdf
+              </span>
+            </label>
+
+            <label
+              className={`p-4 rounded-xl border cursor-pointer text-xs transition-all ${
+                settings.folderStructure === 'CLIENTE_DIRETO'
+                  ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20'
+                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+              }`}
+            >
+              <input
+                type="radio"
+                name="folderStructure"
+                value="CLIENTE_DIRETO"
+                checked={settings.folderStructure === 'CLIENTE_DIRETO'}
+                onChange={() => setSettings({ ...settings, folderStructure: 'CLIENTE_DIRETO' })}
+                className="sr-only"
+              />
+              <span className="font-bold text-slate-900 block mb-1">APENAS CLIENTE</span>
+              <span className="text-slate-500 font-mono text-[11px] block">
+                ACME LOG / NF_...pdf
+              </span>
+            </label>
+
             <label
               className={`p-4 rounded-xl border cursor-pointer text-xs transition-all ${
                 settings.folderStructure === 'ANO_MES_CLIENTE'
@@ -139,48 +207,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onSettingsSaved }) =
               <span className="font-bold text-slate-900 block mb-1">ANO / MÊS / CLIENTE</span>
               <span className="text-slate-500 font-mono text-[11px] block">
                 2026 / 09 - SETEMBRO / ACME LOG / NF_...pdf
-              </span>
-            </label>
-
-            <label
-              className={`p-4 rounded-xl border cursor-pointer text-xs transition-all ${
-                settings.folderStructure === 'CLIENTE_ANO_MES'
-                  ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20'
-                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-              }`}
-            >
-              <input
-                type="radio"
-                name="folderStructure"
-                value="CLIENTE_ANO_MES"
-                checked={settings.folderStructure === 'CLIENTE_ANO_MES'}
-                onChange={() => setSettings({ ...settings, folderStructure: 'CLIENTE_ANO_MES' })}
-                className="sr-only"
-              />
-              <span className="font-bold text-slate-900 block mb-1">CLIENTE / ANO / MÊS</span>
-              <span className="text-slate-500 font-mono text-[11px] block">
-                ACME LOG / 2026 / 09 - SETEMBRO / NF_...pdf
-              </span>
-            </label>
-
-            <label
-              className={`p-4 rounded-xl border cursor-pointer text-xs transition-all ${
-                settings.folderStructure === 'ANO_CLIENTE'
-                  ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20'
-                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-              }`}
-            >
-              <input
-                type="radio"
-                name="folderStructure"
-                value="ANO_CLIENTE"
-                checked={settings.folderStructure === 'ANO_CLIENTE'}
-                onChange={() => setSettings({ ...settings, folderStructure: 'ANO_CLIENTE' })}
-                className="sr-only"
-              />
-              <span className="font-bold text-slate-900 block mb-1">ANO / CLIENTE</span>
-              <span className="text-slate-500 font-mono text-[11px] block">
-                2026 / ACME LOG / NF_...pdf
               </span>
             </label>
           </div>

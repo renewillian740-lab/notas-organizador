@@ -9,7 +9,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   sourceDirectoryName: 'Notas Fiscais Origem',
   targetDirectoryName: 'Notas Fiscais Organizadas',
   namingPattern: 'NF_[NUMERO]_[CLIENTE]_[VALOR]_[DATA].pdf',
-  folderStructure: 'ANO_MES_CLIENTE',
+  folderStructure: 'MES_CLIENTE',
   duplicateHandling: 'NUMBER_SUFFIX',
   autoRegisterNewClients: false,
   alertOnAmbiguity: true,
