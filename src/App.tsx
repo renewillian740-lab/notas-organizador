@@ -9,6 +9,9 @@ import { RefreshCw } from 'lucide-react';
 const ProcessInvoices = lazy(() =>
   import('./components/ProcessInvoices').then((m) => ({ default: m.ProcessInvoices }))
 );
+const MonthlyOverviewPage = lazy(() =>
+  import('./components/MonthlyOverviewPage').then((m) => ({ default: m.MonthlyOverviewPage }))
+);
 const UploadDataPage = lazy(() =>
   import('./components/UploadDataPage').then((m) => ({ default: m.UploadDataPage }))
 );
@@ -41,7 +44,7 @@ function PageLoadingFallback() {
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<
-    'dashboard' | 'process' | 'upload' | 'clients' | 'history' | 'settings'
+    'dashboard' | 'monthly' | 'process' | 'upload' | 'clients' | 'history' | 'settings'
   >('dashboard');
 
   const [clientsCount, setClientsCount] = useState(0);
@@ -100,6 +103,14 @@ export default function App() {
               onNavigateTab={setCurrentTab}
               onViewInvoiceDetails={(item) => setSelectedDetailRecord(item)}
               onLoadSamples={() => setCurrentTab('process')}
+            />
+          )}
+
+          {currentTab === 'monthly' && (
+            <MonthlyOverviewPage
+              history={recentHistory}
+              onViewInvoiceDetails={(item) => setSelectedDetailRecord(item)}
+              onNavigateTab={setCurrentTab}
             />
           )}
 

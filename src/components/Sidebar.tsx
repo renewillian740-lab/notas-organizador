@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard,
+  CalendarDays,
   FileSpreadsheet,
   FolderUp,
   Users,
@@ -16,8 +17,8 @@ import {
 import { useTheme } from '../context/ThemeContext';
 
 interface SidebarProps {
-  currentTab: 'dashboard' | 'process' | 'upload' | 'clients' | 'history' | 'settings';
-  onSelectTab: (tab: 'dashboard' | 'process' | 'upload' | 'clients' | 'history' | 'settings') => void;
+  currentTab: 'dashboard' | 'monthly' | 'process' | 'upload' | 'clients' | 'history' | 'settings';
+  onSelectTab: (tab: 'dashboard' | 'monthly' | 'process' | 'upload' | 'clients' | 'history' | 'settings') => void;
   onOpenResetModal?: () => void;
   pendingReviewCount: number;
   clientsCount: number;
@@ -37,6 +38,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'dashboard',
       label: 'Dashboard',
       icon: LayoutDashboard,
+      badge: null,
+    },
+    {
+      id: 'monthly',
+      label: 'Visão Mensal',
+      icon: CalendarDays,
       badge: null,
     },
     {

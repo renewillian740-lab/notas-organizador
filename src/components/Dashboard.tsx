@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   FileText,
   FileCheck2,
@@ -15,9 +15,14 @@ import {
   FolderOpen,
   FolderUp,
   FileSpreadsheet,
+  CalendarDays,
+  DollarSign,
+  ChevronRight,
+  BarChart3,
 } from 'lucide-react';
 import { HistoryRecord } from '../types';
 import { PdfViewerModal } from './PdfViewerModal';
+import { groupHistoryByMonth, formatBRL } from '../utils/monthUtils';
 
 interface DashboardProps {
   totalNotesLifetime: number;
@@ -25,7 +30,7 @@ interface DashboardProps {
   pendingNotesCount: number;
   clientsCount: number;
   recentHistory: HistoryRecord[];
-  onNavigateTab: (tab: 'dashboard' | 'process' | 'upload' | 'clients' | 'history' | 'settings') => void;
+  onNavigateTab: (tab: 'dashboard' | 'monthly' | 'process' | 'upload' | 'clients' | 'history' | 'settings') => void;
   onViewInvoiceDetails: (record: HistoryRecord) => void;
   onLoadSamples: () => void;
 }
@@ -41,6 +46,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onLoadSamples,
 }) => {
   const [selectedPdfToView, setSelectedPdfToView] = useState<HistoryRecord | null>(null);
+
+  // Agrupamento por mês para organização e fechamento mensal
+  const monthlyGroups = useMemo(() => {
+    return groupHistoryByMonth(recentHistory);
+  }, [recentHistory]);
+
+  const totalRevenueLifetime = useMemo(() => {
+    return recentHistory.reduce((sum, h) => sum + (h.invoiceValue || 0), 0);
+  }, [recentHistory]);
+
+  const latestMonth = monthlyGroups[0] || null;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -185,6 +201,90 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </span>
           </div>
         </div>
+      </div>
+
+      {/* SEÇÃO DE ORGANIZAÇÃO & FECHAMENTO MENSAL */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+                Organização & Fechamento Mensal
+              </h2>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Controle de emissão e faturamento total por mês de competência
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              id="btn-dash-open-monthly-tab"
+              onClick={() => onNavigateTab('monthly')}
+              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 cursor-pointer"
+            >
+              Abrir Visão Mensal Completa <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {monthlyGroups.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {monthlyGroups.slice(0, 3).map((group, idx) => (
+              <div
+                key={group.monthKey}
+                onClick={() => onNavigateTab('monthly')}
+                className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer space-y-3 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                    <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
+                      {group.label}
+                    </span>
+                  </div>
+                  {idx === 0 && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+                      Mês Mais Recente
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Notas Emitidas
+                    </span>
+                    <span className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+                      {group.totalInvoices}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Faturamento Total
+                    </span>
+                    <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                      {group.totalValueFormatted}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <span>Ticket Médio: <strong className="text-slate-700 dark:text-slate-300">{group.averageValueFormatted}</strong></span>
+                  <span className="text-blue-600 dark:text-blue-400 font-bold group-hover:translate-x-1 transition-transform flex items-center">
+                    Ver detalhes <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 text-center text-slate-400 text-xs">
+            Nenhuma competência mensal identificada ainda. Processe notas fiscais para gerar o fechamento automático.
+          </div>
+        )}
       </div>
 
       {/* "Últimos arquivos processados" Table */}
