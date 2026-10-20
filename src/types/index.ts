@@ -197,5 +197,6 @@ export interface AppSettings {
   theme?: 'light' | 'dark' | 'system';
   issuerCnpj?: string; // CNPJ da Minha Empresa / Emissor / Prestador
   issuerName?: string; // Razão Social / Nome da Minha Empresa
+  defaultTaxRate?: number; // Alíquota padrão de imposto em % (ex: 6.0)
 }
 

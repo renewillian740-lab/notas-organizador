@@ -20,6 +20,7 @@ import {
   FolderPlus,
   Sparkles,
   Building2,
+  Percent,
 } from 'lucide-react';
 import { AppSettings } from '../types';
 import { db, DEFAULT_SETTINGS } from '../services/db';
@@ -367,6 +368,31 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 placeholder="RENE WILLIAN SANTOS MENEZES 86139841500"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs uppercase font-medium focus:bg-white dark:focus:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <Percent className="w-3.5 h-3.5 text-amber-500" />
+                Alíquota Padrão de Imposto (%)
+              </label>
+              <div className="flex items-center gap-3">
+                <div className="relative w-36">
+                  <input
+                    id="input-default-tax-rate"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={settings.defaultTaxRate !== undefined ? settings.defaultTaxRate : 6.0}
+                    onChange={(e) => setSettings({ ...settings, defaultTaxRate: parseFloat(e.target.value) || 0 })}
+                    className="w-full pl-3 pr-8 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-bold focus:bg-white dark:focus:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                </div>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  Porcentagem padrão utilizada na nova aba <strong>Impostos</strong> para simulação e cálculo fiscal.
+                </span>
+              </div>
             </div>
           </div>
 

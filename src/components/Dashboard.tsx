@@ -19,6 +19,7 @@ import {
   DollarSign,
   ChevronRight,
   BarChart3,
+  Calculator,
 } from 'lucide-react';
 import { HistoryRecord } from '../types';
 import { PdfViewerModal } from './PdfViewerModal';
@@ -30,7 +31,7 @@ interface DashboardProps {
   pendingNotesCount: number;
   clientsCount: number;
   recentHistory: HistoryRecord[];
-  onNavigateTab: (tab: 'dashboard' | 'monthly' | 'process' | 'upload' | 'clients' | 'history' | 'settings') => void;
+  onNavigateTab: (tab: 'dashboard' | 'monthly' | 'taxes' | 'process' | 'upload' | 'clients' | 'history' | 'settings') => void;
   onViewInvoiceDetails: (record: HistoryRecord) => void;
   onLoadSamples: () => void;
 }
@@ -218,7 +219,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              id="btn-dash-open-taxes-tab"
+              onClick={() => onNavigateTab('taxes')}
+              className="text-xs font-bold text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 flex items-center gap-1.5 cursor-pointer bg-amber-500/10 dark:bg-amber-950/40 px-3 py-1.5 rounded-xl border border-amber-500/20 hover:border-amber-500/40 transition-colors"
+            >
+              <Calculator className="w-3.5 h-3.5 text-amber-500" />
+              <span>Calcular Impostos</span>
+            </button>
             <button
               id="btn-dash-open-monthly-tab"
               onClick={() => onNavigateTab('monthly')}

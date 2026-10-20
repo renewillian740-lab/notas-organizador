@@ -19,6 +19,7 @@ import {
   Calendar,
   Building2,
   Eye,
+  Calculator,
 } from 'lucide-react';
 import { HistoryRecord } from '../types';
 import {
@@ -32,7 +33,7 @@ import { PdfViewerModal } from './PdfViewerModal';
 interface MonthlyOverviewPageProps {
   history: HistoryRecord[];
   onViewInvoiceDetails: (record: HistoryRecord) => void;
-  onNavigateTab: (tab: 'dashboard' | 'process' | 'upload' | 'clients' | 'history' | 'settings' | 'monthly') => void;
+  onNavigateTab: (tab: 'dashboard' | 'process' | 'upload' | 'clients' | 'history' | 'settings' | 'monthly' | 'taxes') => void;
 }
 
 export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
@@ -129,7 +130,16 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
         </div>
 
         {activeGroup && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              id="btn-calc-taxes-from-monthly"
+              onClick={() => onNavigateTab('taxes')}
+              className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer"
+              title="Calcular imposto estimado a pagar com base nas notas deste mês"
+            >
+              <Calculator className="w-4 h-4 text-slate-950" />
+              <span>Calcular Impostos</span>
+            </button>
             <button
               id="btn-export-active-month-csv"
               onClick={() => exportMonthlyGroupCSV(activeGroup)}

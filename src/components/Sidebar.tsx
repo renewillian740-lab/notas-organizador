@@ -13,12 +13,13 @@ import {
   Moon,
   Monitor,
   Trash2,
+  Calculator,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 interface SidebarProps {
-  currentTab: 'dashboard' | 'monthly' | 'process' | 'upload' | 'clients' | 'history' | 'settings';
-  onSelectTab: (tab: 'dashboard' | 'monthly' | 'process' | 'upload' | 'clients' | 'history' | 'settings') => void;
+  currentTab: 'dashboard' | 'monthly' | 'taxes' | 'process' | 'upload' | 'clients' | 'history' | 'settings';
+  onSelectTab: (tab: 'dashboard' | 'monthly' | 'taxes' | 'process' | 'upload' | 'clients' | 'history' | 'settings') => void;
   onOpenResetModal?: () => void;
   pendingReviewCount: number;
   clientsCount: number;
@@ -45,6 +46,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Visão Mensal',
       icon: CalendarDays,
       badge: null,
+    },
+    {
+      id: 'taxes',
+      label: 'Impostos',
+      icon: Calculator,
+      badge: { text: 'Simular', color: 'bg-amber-500/20 text-amber-300 border border-amber-500/30' },
     },
     {
       id: 'process',

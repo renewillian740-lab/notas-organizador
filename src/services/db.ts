@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'light',
   issuerCnpj: '47.042.028/0001-55',
   issuerName: 'RENE WILLIAN SANTOS MENEZES 86139841500',
+  defaultTaxRate: 6.0,
 };
 
 

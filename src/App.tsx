@@ -12,6 +12,9 @@ const ProcessInvoices = lazy(() =>
 const MonthlyOverviewPage = lazy(() =>
   import('./components/MonthlyOverviewPage').then((m) => ({ default: m.MonthlyOverviewPage }))
 );
+const TaxEstimationPage = lazy(() =>
+  import('./components/TaxEstimationPage').then((m) => ({ default: m.TaxEstimationPage }))
+);
 const UploadDataPage = lazy(() =>
   import('./components/UploadDataPage').then((m) => ({ default: m.UploadDataPage }))
 );
@@ -44,7 +47,7 @@ function PageLoadingFallback() {
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<
-    'dashboard' | 'monthly' | 'process' | 'upload' | 'clients' | 'history' | 'settings'
+    'dashboard' | 'monthly' | 'taxes' | 'process' | 'upload' | 'clients' | 'history' | 'settings'
   >('dashboard');
 
   const [clientsCount, setClientsCount] = useState(0);
@@ -108,6 +111,14 @@ export default function App() {
 
           {currentTab === 'monthly' && (
             <MonthlyOverviewPage
+              history={recentHistory}
+              onViewInvoiceDetails={(item) => setSelectedDetailRecord(item)}
+              onNavigateTab={setCurrentTab}
+            />
+          )}
+
+          {currentTab === 'taxes' && (
+            <TaxEstimationPage
               history={recentHistory}
               onViewInvoiceDetails={(item) => setSelectedDetailRecord(item)}
               onNavigateTab={setCurrentTab}
