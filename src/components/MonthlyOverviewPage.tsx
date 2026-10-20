@@ -11,15 +11,10 @@ import {
   CheckCircle2,
   AlertTriangle,
   FileCheck2,
-  ArrowUpRight,
-  Layers,
-  Sparkles,
-  PieChart,
-  BarChart3,
-  Calendar,
   Building2,
   Eye,
   Calculator,
+  Search,
 } from 'lucide-react';
 import { HistoryRecord } from '../types';
 import {
@@ -89,24 +84,27 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
     });
   }, [activeGroup, searchInMonth, statusFilter]);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusText = (status: string) => {
     switch (status) {
       case 'PROCESSADO':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
-            <CheckCircle2 className="w-3 h-3" /> Processado
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Processado
           </span>
         );
       case 'REVISAR':
       case 'PENDENTE':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300">
-            <AlertTriangle className="w-3 h-3" /> Revisão
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Revisão
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
             Erro
           </span>
         );
@@ -114,81 +112,67 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
   };
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto text-slate-900 dark:text-slate-100">
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-6 rounded-3xl text-white shadow-xl shadow-blue-900/10 border border-blue-800/40">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold mb-2 border border-blue-400/30">
-            <CalendarDays className="w-3.5 h-3.5" /> Gestão & Fechamento Mensal
-          </div>
-          <h1 className="text-2xl font-black tracking-tight text-white">
-            Organização de Notas Fiscais por Mês
+    <div className="p-8 max-w-5xl mx-auto space-y-6 text-slate-900 dark:text-slate-100 animate-in fade-in duration-200">
+      {/* Header Minimalista */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Visão Mensal
           </h1>
-          <p className="text-sm text-slate-300 max-w-2xl">
-            Acompanhe o volume mensal de emissões, faturamento consolidado por competência e detalhamento por cliente.
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Organização de faturamento e volume de notas fiscais emitidas por mês de competência.
           </p>
         </div>
 
         {activeGroup && (
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               id="btn-calc-taxes-from-monthly"
               onClick={() => onNavigateTab('taxes')}
-              className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer"
-              title="Calcular imposto estimado a pagar com base nas notas deste mês"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
             >
-              <Calculator className="w-4 h-4 text-slate-950" />
-              <span>Calcular Impostos</span>
+              <Calculator className="w-3.5 h-3.5 text-slate-500" />
+              <span>Calcular impostos</span>
             </button>
+
             <button
               id="btn-export-active-month-csv"
               onClick={() => exportMonthlyGroupCSV(activeGroup)}
-              className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold shadow-lg transition-all flex items-center gap-2 cursor-pointer"
-              title="Baixar planilha CSV com o fechamento do mês selecionado"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
             >
-              <Download className="w-4 h-4 text-blue-600" /> Exportar Fechamento ({activeGroup.shortLabel})
+              <Download className="w-3.5 h-3.5 text-slate-500" />
+              <span>Exportar ({activeGroup.shortLabel})</span>
             </button>
           </div>
         )}
       </div>
 
       {monthlyGroups.length === 0 ? (
-        /* Estado Vazio */
-        <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-xs">
-          <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
-            <CalendarDays className="w-8 h-8" />
-          </div>
-          <div className="space-y-1 max-w-md mx-auto">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-              Nenhuma nota fiscal processada ainda
+        <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+          <FileText className="w-8 h-8 mx-auto text-slate-400 opacity-40" />
+          <div className="space-y-1 max-w-sm mx-auto">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              Nenhuma nota fiscal processada
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Processe notas fiscais na aba &quot;Processar notas&quot; ou carregue dados de teste para visualizar o fechamento mensal, quantidade emitida e faturamento por mês.
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Processe notas fiscais na aba &quot;Processar notas&quot; ou carregue exemplos para visualizar o fechamento mensal.
             </p>
           </div>
           <div className="pt-2">
             <button
               onClick={() => onNavigateTab('process')}
-              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/30 transition-all cursor-pointer inline-flex items-center gap-2"
+              className="px-3.5 py-1.5 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer"
             >
-              <FileCheck2 className="w-4 h-4" /> Processar Notas Agora
+              Processar notas agora
             </button>
           </div>
         </div>
       ) : (
         <>
-          {/* Month Selector Pills / Tabs */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5" /> Selecionar Mês de Competência
-              </span>
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                {monthlyGroups.length} {monthlyGroups.length === 1 ? 'mês registrado' : 'meses registrados'}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
+          {/* Barra de Seleção de Mês Unificada */}
+          <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-4 overflow-x-auto scrollbar-none">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-xs font-medium text-slate-500 px-1">Competência:</span>
               {monthlyGroups.map((group) => {
                 const isSelected = activeGroup?.monthKey === group.monthKey;
                 return (
@@ -196,190 +180,141 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
                     key={group.monthKey}
                     id={`btn-month-tab-${group.monthKey}`}
                     onClick={() => setSelectedMonthKey(group.monthKey)}
-                    className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center gap-2.5 cursor-pointer border ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 ${
                       isSelected
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/25 scale-[1.02]'
-                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     <span>{group.label}</span>
-                    <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                        isSelected
-                          ? 'bg-white/20 text-white'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      {group.totalInvoices} {group.totalInvoices === 1 ? 'nota' : 'notas'}
+                    <span className="ml-1.5 opacity-60 font-mono text-[11px]">
+                      ({group.totalInvoices})
                     </span>
                   </button>
                 );
               })}
             </div>
+
+            <div className="text-xs text-slate-400 shrink-0 font-medium hidden md:block">
+              {monthlyGroups.length} {monthlyGroups.length === 1 ? 'mês cadastrado' : 'meses cadastrados'}
+            </div>
           </div>
 
           {activeGroup && (
             <>
-              {/* Active Month Headline Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {/* FATURAMENTO DO MÊS */}
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
-                      Faturamento do Mês
+              {/* Hero Card Minimalista com os Valores do Mês */}
+              <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
+                  {/* Faturamento */}
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      Faturamento de {activeGroup.shortLabel}
                     </span>
-                    <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
-                      <DollarSign className="w-4 h-4" />
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                    <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-mono tabular-nums">
                       {activeGroup.totalValueFormatted}
-                    </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block mt-1">
-                      Competência: {activeGroup.label}
-                    </span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      {activeGroup.label}
+                    </div>
                   </div>
-                </div>
 
-                {/* NOTAS EMITIDAS NO MÊS */}
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
-                      Notas Emitidas
+                  {/* Notas Emitidas */}
+                  <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      Notas emitidas
                     </span>
-                    <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 flex items-center justify-center">
-                      <FileText className="w-4 h-4" />
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+                      {activeGroup.totalInvoices}
                     </div>
-                  </div>
-                  <div className="mt-3">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
-                        {activeGroup.totalInvoices}
-                      </span>
-                      <span className="text-xs font-bold text-slate-400">
-                        {activeGroup.totalInvoices === 1 ? 'documento' : 'documentos'}
-                      </span>
-                    </div>
-                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium block mt-1">
+                    <div className="text-[11px] text-slate-400">
                       {activeGroup.processedCount} processadas com sucesso
-                    </span>
-                  </div>
-                </div>
-
-                {/* TICKET MÉDIO */}
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
-                      Ticket Médio
-                    </span>
-                    <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center">
-                      <TrendingUp className="w-4 h-4" />
                     </div>
                   </div>
-                  <div className="mt-3">
-                    <span className="text-3xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
+
+                  {/* Ticket Médio */}
+                  <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      Ticket médio
+                    </span>
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
                       {activeGroup.averageValueFormatted}
-                    </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block mt-1">
-                      Média por nota emitida no mês
-                    </span>
-                  </div>
-                </div>
-
-                {/* CLIENTES ATENDIDOS NO MÊS */}
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
-                      Clientes do Mês
-                    </span>
-                    <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 flex items-center justify-center">
-                      <Users className="w-4 h-4" />
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      Média por nota emitida
                     </div>
                   </div>
-                  <div className="mt-3">
-                    <span className="text-3xl font-black text-violet-600 dark:text-violet-400 tracking-tight">
+
+                  {/* Tomadores / Clientes */}
+                  <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      Clientes atendidos
+                    </span>
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
                       {activeGroup.topClients.length}
-                    </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block mt-1">
-                      Tomadores com notas neste período
-                    </span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      Empresas com notas no período
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Monthly Visual Comparison & Evolution Bar Chart */}
+              {/* Comparativo Mês a Mês */}
               {monthlyGroups.length > 1 && (
-                <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        Comparativo Mensal de Faturamento & Emissões
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        Comparativo Mês a Mês
                       </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        Evolução mês a mês das notas emitidas e receita total correspondente
+                      <p className="text-xs text-slate-400">
+                        Distribuição do faturamento entre as competências
                       </p>
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                      Total Acumulado:{' '}
-                      <span className="text-emerald-600 dark:text-emerald-400 font-black">
+                    <div className="text-xs text-slate-500">
+                      Total:{' '}
+                      <strong className="text-slate-900 dark:text-white font-mono tabular-nums">
                         {formatBRL(totalLifetimeValue)}
-                      </span>
+                      </strong>
                     </div>
                   </div>
 
-                  {/* Horizontal Visual Comparison Bars */}
-                  <div className="space-y-3 pt-2">
+                  <div className="space-y-2 pt-1">
                     {monthlyGroups.map((group) => {
                       const isCurrentActive = group.monthKey === activeGroup.monthKey;
                       const percentage = Math.max(
                         Math.round((group.totalValue / maxMonthValue) * 100),
-                        6
+                        4
                       );
 
                       return (
                         <div
                           key={`compare-${group.monthKey}`}
                           onClick={() => setSelectedMonthKey(group.monthKey)}
-                          className={`p-3 rounded-2xl cursor-pointer transition-all border ${
+                          className={`p-2.5 rounded-xl cursor-pointer transition-colors ${
                             isCurrentActive
-                              ? 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700/60 shadow-xs'
-                              : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-800/70 hover:bg-slate-100/70 dark:hover:bg-slate-800/70'
+                              ? 'bg-slate-100/90 dark:bg-slate-800/80'
+                              : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
                           }`}
                         >
                           <div className="flex items-center justify-between text-xs mb-1.5">
-                            <span
-                              className={`font-bold flex items-center gap-2 ${
-                                isCurrentActive
-                                  ? 'text-blue-600 dark:text-blue-400'
-                                  : 'text-slate-800 dark:text-slate-200'
-                              }`}
-                            >
+                            <span className={`font-medium ${isCurrentActive ? 'text-slate-900 dark:text-white font-semibold' : 'text-slate-600 dark:text-slate-400'}`}>
                               {group.label}
-                              {isCurrentActive && (
-                                <span className="text-[10px] px-2 py-0.2 bg-blue-600 text-white rounded-full font-bold">
-                                  Visualizando
-                                </span>
-                              )}
                             </span>
-                            <div className="flex items-center gap-3 font-mono">
-                              <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+                            <div className="flex items-center gap-3 font-mono text-xs tabular-nums">
+                              <span className="text-slate-400 text-[11px]">
                                 {group.totalInvoices} {group.totalInvoices === 1 ? 'nota' : 'notas'}
                               </span>
-                              <span className="font-bold text-emerald-700 dark:text-emerald-400">
+                              <span className="font-semibold text-slate-900 dark:text-white">
                                 {group.totalValueFormatted}
                               </span>
                             </div>
                           </div>
 
-                          {/* Progress / Bar track */}
-                          <div className="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                isCurrentActive
-                                  ? 'bg-gradient-to-r from-blue-600 to-emerald-500'
-                                  : 'bg-slate-400 dark:bg-slate-500'
+                              className={`h-full rounded-full transition-all duration-300 ${
+                                isCurrentActive ? 'bg-slate-900 dark:bg-white' : 'bg-slate-300 dark:bg-slate-700'
                               }`}
                               style={{ width: `${percentage}%` }}
                             />
@@ -391,90 +326,34 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
                 </div>
               )}
 
-              {/* Top Clients of the Month */}
-              {activeGroup.topClients.length > 0 && (
-                <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-                        Tomadores de Serviços em {activeGroup.label}
-                      </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        Distribuição do faturamento por cliente tomador no mês
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {activeGroup.topClients.map((client, idx) => {
-                      const clientPercent =
-                        activeGroup.totalValue > 0
-                          ? Math.round((client.totalValue / activeGroup.totalValue) * 100)
-                          : 0;
-
-                      return (
-                        <div
-                          key={`client-${idx}-${client.cleanCnpj}`}
-                          className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-800 space-y-2"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                              <span
-                                className="font-bold text-xs text-slate-900 dark:text-slate-100 block truncate"
-                                title={client.clientName}
-                              >
-                                {client.clientName}
-                              </span>
-                              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono block">
-                                {client.cnpj || 'Doc não informado'}
-                              </span>
-                            </div>
-                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 shrink-0">
-                              {client.count} {client.count === 1 ? 'nota' : 'notas'}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/50 dark:border-slate-800/50">
-                            <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
-                              {client.totalValueFormatted}
-                            </span>
-                            <span className="text-[11px] text-slate-400 font-medium">
-                              {clientPercent}% do mês
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Table of Invoices in Selected Month */}
-              <div className="space-y-4">
+              {/* Tabela de Notas Fiscais do Mês */}
+              <div className="space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                       Notas Fiscais de {activeGroup.label}
                     </h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                      Exibindo {filteredMonthRecords.length} de {activeGroup.totalInvoices} notas deste mês
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {filteredMonthRecords.length} de {activeGroup.totalInvoices} notas deste período
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2.5">
-                    <input
-                      type="text"
-                      placeholder="Buscar nesta competência..."
-                      value={searchInMonth}
-                      onChange={(e) => setSearchInMonth(e.target.value)}
-                      className="px-3.5 py-1.5 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                    />
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Buscar nota ou cliente..."
+                        value={searchInMonth}
+                        onChange={(e) => setSearchInMonth(e.target.value)}
+                        className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-slate-400"
+                      />
+                    </div>
 
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-3.5 py-1.5 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                      className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:border-slate-400"
                     >
                       <option value="ALL">Todos os status</option>
                       <option value="PROCESSADO">Processadas</option>
@@ -484,18 +363,18 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+                      <thead className="bg-slate-50/75 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-[11px]">
                         <tr>
-                          <th className="py-3.5 px-6">Arquivo Renomeado / Original</th>
-                          <th className="py-3.5 px-6">Cliente (Tomador)</th>
-                          <th className="py-3.5 px-6">Número</th>
-                          <th className="py-3.5 px-6">Data Emissão</th>
-                          <th className="py-3.5 px-6">Valor da Nota</th>
-                          <th className="py-3.5 px-6">Status</th>
-                          <th className="py-3.5 px-6 text-right">Ações</th>
+                          <th className="py-3 px-4">Arquivo</th>
+                          <th className="py-3 px-4">Cliente (Tomador)</th>
+                          <th className="py-3 px-4">Número</th>
+                          <th className="py-3 px-4">Emissão</th>
+                          <th className="py-3 px-4 text-right">Valor da Nota</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4 text-right">Ações</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -503,58 +382,58 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
                           filteredMonthRecords.map((item) => (
                             <tr
                               key={item.id}
-                              className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
+                              className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors"
                             >
-                              <td className="py-3.5 px-6">
-                                <div className="max-w-xs truncate">
-                                  <span
-                                    className="font-bold text-slate-900 dark:text-slate-100 block truncate"
-                                    title={item.generatedFileName}
-                                  >
-                                    {item.generatedFileName}
-                                  </span>
-                                  <span
-                                    className="text-[11px] text-slate-400 dark:text-slate-500 font-mono block truncate"
-                                    title={item.originalFileName}
-                                  >
-                                    Original: {item.originalFileName}
-                                  </span>
-                                </div>
+                              <td className="py-3 px-4 max-w-xs">
+                                <span
+                                  className="font-medium text-slate-900 dark:text-slate-100 block truncate"
+                                  title={item.generatedFileName}
+                                >
+                                  {item.generatedFileName}
+                                </span>
+                                <span
+                                  className="text-[11px] text-slate-400 font-mono block truncate"
+                                  title={item.originalFileName}
+                                >
+                                  Original: {item.originalFileName}
+                                </span>
                               </td>
-                              <td className="py-3.5 px-6">
-                                <span className="font-bold text-slate-800 dark:text-slate-200">
+                              <td className="py-3 px-4">
+                                <span className="font-medium text-slate-800 dark:text-slate-200 block truncate max-w-[200px]">
                                   {item.clientName}
                                 </span>
-                                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono block">
+                                <span className="text-[11px] text-slate-400 font-mono block">
                                   {item.cnpj || '-'}
                                 </span>
                               </td>
-                              <td className="py-3.5 px-6 font-mono text-slate-800 dark:text-slate-200">
+                              <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300">
                                 {item.invoiceNumber || 'S_N'}
                               </td>
-                              <td className="py-3.5 px-6 text-slate-600 dark:text-slate-400">
+                              <td className="py-3 px-4 text-slate-600 dark:text-slate-400 font-mono text-[11px]">
                                 {item.invoiceDate}
                               </td>
-                              <td className="py-3.5 px-6 font-extrabold text-emerald-700 dark:text-emerald-400">
+                              <td className="py-3 px-4 text-right font-mono font-medium text-slate-900 dark:text-slate-100 tabular-nums">
                                 {item.invoiceValueFormatted}
                               </td>
-                              <td className="py-3.5 px-6">{getStatusBadge(item.status)}</td>
-                              <td className="py-3.5 px-6 text-right">
+                              <td className="py-3 px-4">
+                                {getStatusText(item.status)}
+                              </td>
+                              <td className="py-3 px-4 text-right">
                                 <div className="flex items-center justify-end gap-1.5">
                                   <button
                                     id={`btn-month-view-pdf-${item.id}`}
                                     onClick={() => setSelectedPdfToView(item)}
-                                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors inline-flex items-center gap-1 font-semibold text-[11px] cursor-pointer"
+                                    className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
                                     title="Visualizar PDF"
                                   >
-                                    <FileText className="w-3.5 h-3.5" /> PDF
+                                    <FileText className="w-3 h-3" /> PDF
                                   </button>
                                   <button
                                     id={`btn-month-view-detail-${item.id}`}
                                     onClick={() => onViewInvoiceDetails(item)}
-                                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors inline-flex items-center gap-1 font-semibold text-[11px] cursor-pointer"
+                                    className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
                                   >
-                                    <Eye className="w-3.5 h-3.5" /> Detalhes
+                                    <Eye className="w-3 h-3" /> Detalhes
                                   </button>
                                 </div>
                               </td>
@@ -564,7 +443,7 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
                           <tr>
                             <td
                               colSpan={7}
-                              className="py-10 text-center text-slate-400 dark:text-slate-500"
+                              className="py-10 text-center text-slate-400 text-xs"
                             >
                               Nenhuma nota encontrada com os filtros selecionados.
                             </td>

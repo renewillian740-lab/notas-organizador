@@ -88,24 +88,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { theme, setTheme } = useTheme();
 
   return (
-    <aside className="w-72 bg-slate-900 text-slate-200 flex flex-col shrink-0 border-r border-slate-800 select-none">
-      {/* Brand Header */}
-      <div className="p-6 border-b border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-            <FileCheck2 className="w-5 h-5" />
+    <aside className="w-64 bg-slate-950 text-slate-200 flex flex-col shrink-0 border-r border-slate-800/80 select-none">
+      {/* Brand Header Minimalista */}
+      <div className="p-5 border-b border-slate-800/80">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-200">
+            <FileCheck2 className="w-4 h-4" />
           </div>
           <div>
-            <h1 className="font-bold text-base tracking-tight text-white leading-tight">
+            <h1 className="font-bold text-sm tracking-tight text-white leading-tight">
               Organizador NF
             </h1>
-            <p className="text-xs text-slate-400 font-medium">Gestão Inteligente de PDFs</p>
+            <p className="text-[11px] text-slate-400">Gestão e Fiscal</p>
           </div>
         </div>
       </div>
 
       {/* Navigation List */}
-      <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
@@ -115,18 +115,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={item.id}
               id={`nav-btn-${item.id}`}
               onClick={() => onSelectTab(item.id)}
-              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-semibold transition-all duration-150 ${
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                 isActive
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  ? 'bg-slate-800 text-white font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                 <span>{item.label}</span>
               </div>
               {item.badge && (
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${item.badge.color}`}>
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono text-slate-400 bg-slate-900">
                   {item.badge.text}
                 </span>
               )}
@@ -135,21 +135,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {/* Theme Switcher Segmented Control */}
-      <div className="px-4 mb-3">
-        <div className="p-1 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-1">
+      {/* Theme Switcher Minimalista */}
+      <div className="px-3 mb-3">
+        <div className="p-0.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center gap-1">
           <button
             type="button"
             id="theme-btn-light"
             onClick={() => setTheme('light')}
             title="Tema Claro"
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1 py-1 rounded text-[11px] font-medium transition-colors ${
               theme === 'light'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                ? 'bg-slate-800 text-white'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Sun className="w-3.5 h-3.5" />
+            <Sun className="w-3 h-3" />
             <span>Claro</span>
           </button>
           <button
@@ -157,13 +157,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             id="theme-btn-dark"
             onClick={() => setTheme('dark')}
             title="Tema Escuro"
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1 py-1 rounded text-[11px] font-medium transition-colors ${
               theme === 'dark'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                ? 'bg-slate-800 text-white'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Moon className="w-3.5 h-3.5" />
+            <Moon className="w-3 h-3" />
             <span>Escuro</span>
           </button>
           <button
@@ -171,41 +171,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
             id="theme-btn-system"
             onClick={() => setTheme('system')}
             title="Seguir Sistema Operacional"
-            className={`p-1.5 rounded-lg text-xs transition-all ${
+            className={`p-1 rounded text-[11px] transition-colors ${
               theme === 'system'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                ? 'bg-slate-800 text-white'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Monitor className="w-3.5 h-3.5" />
+            <Monitor className="w-3 h-3" />
           </button>
         </div>
       </div>
 
-      {/* Safety & Integrity Guarantee Footer */}
-      <div className="p-3.5 mx-4 mb-2 rounded-xl bg-slate-800/70 border border-slate-700/50">
-        <div className="flex items-start gap-2.5">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-xs font-semibold text-slate-200">Arquivos Originais Intactos</p>
-            <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-              O sistema nunca modifica ou apaga os PDFs de origem.
-            </p>
-          </div>
+      {/* Safety info minimalista */}
+      <div className="px-3 mb-2">
+        <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-2">
+          <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span>Arquivos originais 100% preservados</span>
         </div>
       </div>
 
       {/* Botão para Zerar Tudo */}
       {onOpenResetModal && (
-        <div className="px-4 mb-4">
+        <div className="px-3 mb-3">
           <button
             type="button"
             id="sidebar-btn-reset-all"
             onClick={onOpenResetModal}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-rose-900/50 bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 hover:text-rose-100 text-xs font-bold transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-900 text-xs font-medium transition-colors cursor-pointer"
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Zerar Tudo</span>
+            <Trash2 className="w-3 h-3" />
+            <span>Zerar dados</span>
           </button>
         </div>
       )}

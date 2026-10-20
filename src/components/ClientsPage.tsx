@@ -6,10 +6,8 @@ import {
   Edit2,
   Trash2,
   Building2,
-  CheckCircle2,
   X,
   AlertCircle,
-  DollarSign,
 } from 'lucide-react';
 import { Client, HistoryRecord } from '../types';
 import { db } from '../services/db';
@@ -115,7 +113,7 @@ export const ClientsPage: React.FC = () => {
   const handleDeleteClient = (client: Client) => {
     if (
       window.confirm(
-        `Tem certeza que deseja remover o cliente "${client.customName}" (${client.cnpj}) do cadastro permanente?`
+        `Tem certeza que deseja remover o cliente "${client.customName}" (${client.cnpj})?`
       )
     ) {
       db.deleteClient(client.id);
@@ -134,81 +132,101 @@ export const ClientsPage: React.FC = () => {
   });
 
   return (
-    <div className="p-8 space-y-6 max-w-7xl mx-auto text-slate-900 dark:text-slate-100">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-8 max-w-5xl mx-auto space-y-6 text-slate-900 dark:text-slate-100 animate-in fade-in duration-200">
+      {/* Header Minimalista */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5">
-            <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" /> Cadastro Permanente de Clientes
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Clientes
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Associação de CNPJ → Nome oficial utilizado para renomeação e organização automática de pastas.
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Cadastro de tomadores de serviços e associação de CNPJ para renomeação de pastas.
           </p>
         </div>
+
         <button
           id="btn-add-client-top"
           onClick={openAddModal}
-          className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-opacity cursor-pointer shadow-xs self-start sm:self-auto"
         >
-          <Plus className="w-4 h-4" /> Adicionar Cliente
+          <Plus className="w-3.5 h-3.5" />
+          <span>Novo cliente</span>
         </button>
       </div>
 
-      {/* Stats bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block">
-            Total de Clientes
-          </span>
-          <span className="text-2xl font-black text-slate-900 dark:text-slate-100 mt-1 block">{clients.length}</span>
-        </div>
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block">
-            Notas Vinculadas
-          </span>
-          <span className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1 block">
-            {clients.reduce((acc, c) => acc + (c.notesCount || 0), 0)}
-          </span>
-        </div>
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block">
-            Valor Total Acumulado
-          </span>
-          <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 block font-mono">
-            {formatCurrency(
-              clients.reduce((acc, c) => acc + getClientTotalValue(c), 0)
-            )}
-          </span>
+      {/* Hero Card com Métricas Consolidadas */}
+      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Clientes cadastrados
+            </span>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+              {clients.length}
+            </div>
+            <div className="text-[11px] text-slate-400">
+              Tomadores registrados no sistema
+            </div>
+          </div>
+
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Notas vinculadas
+            </span>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+              {clients.reduce((acc, c) => acc + (c.notesCount || 0), 0)}
+            </div>
+            <div className="text-[11px] text-slate-400">
+              Documentos associados aos CNPJs
+            </div>
+          </div>
+
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Faturamento acumulado
+            </span>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+              {formatCurrency(
+                clients.reduce((acc, c) => acc + getClientTotalValue(c), 0)
+              )}
+            </div>
+            <div className="text-[11px] text-slate-400">
+              Soma total faturada por clientes
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Filter and Search */}
-      <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-4">
+      {/* Barra de Busca Minimalista */}
+      <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             id="input-search-clients"
             type="text"
             placeholder="Pesquisar por nome do cliente, razão social ou CNPJ..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500 placeholder-slate-400"
+            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-transparent border-0 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden"
           />
+        </div>
+        <div className="text-xs text-slate-400 font-medium px-2 shrink-0">
+          {filteredClients.length} {filteredClients.length === 1 ? 'cliente' : 'clientes'}
         </div>
       </div>
 
-      {/* Clients Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+      {/* Tabela de Clientes */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+            <thead className="bg-slate-50/75 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-[11px]">
               <tr>
-                <th className="py-3.5 px-6">Cliente (Nome no Sistema)</th>
-                <th className="py-3.5 px-6">CNPJ</th>
-                <th className="py-3.5 px-6">Razão Social / Fantasia</th>
-                <th className="py-3.5 px-6 text-center">Notas</th>
-                <th className="py-3.5 px-6 text-right">Valor Total Processado</th>
-                <th className="py-3.5 px-6 text-right">Ações</th>
+                <th className="py-3 px-4">Cliente</th>
+                <th className="py-3 px-4">CNPJ</th>
+                <th className="py-3 px-4">Razão Social</th>
+                <th className="py-3 px-4 text-center">Notas</th>
+                <th className="py-3 px-4 text-right">Faturamento</th>
+                <th className="py-3 px-4 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -216,46 +234,48 @@ export const ClientsPage: React.FC = () => {
                 filteredClients.map((client) => {
                   const totalVal = getClientTotalValue(client);
                   return (
-                    <tr key={client.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3.5 px-6">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 flex items-center justify-center font-bold text-xs">
-                            {client.customName.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">{client.customName}</span>
-                        </div>
+                    <tr key={client.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors">
+                      <td className="py-3 px-4">
+                        <span className="font-semibold text-slate-900 dark:text-slate-100 block">
+                          {client.customName}
+                        </span>
+                        {client.nomeFantasia && client.nomeFantasia !== client.customName && (
+                          <span className="text-[11px] text-slate-400 block">
+                            {client.nomeFantasia}
+                          </span>
+                        )}
                       </td>
-                      <td className="py-3.5 px-6 font-mono font-semibold text-slate-700 dark:text-slate-300">
+                      <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300 text-[11px]">
                         {client.cnpj}
                       </td>
-                      <td className="py-3.5 px-6 text-slate-600 dark:text-slate-400">
-                        {client.razaoSocial || client.nomeFantasia || '-'}
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400 max-w-xs truncate">
+                        {client.razaoSocial || '-'}
                       </td>
-                      <td className="py-3.5 px-6 text-center">
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                          {client.notesCount || 0} notas
+                      <td className="py-3 px-4 text-center">
+                        <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
+                          {client.notesCount || 0}
                         </span>
                       </td>
-                      <td className="py-3.5 px-6 text-right font-bold text-emerald-700 dark:text-emerald-400 font-mono">
+                      <td className="py-3 px-4 text-right font-mono font-medium text-slate-900 dark:text-slate-100 tabular-nums">
                         {formatCurrency(totalVal)}
                       </td>
-                      <td className="py-3.5 px-6 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             id={`btn-edit-client-${client.cleanCnpj}`}
                             onClick={() => openEditModal(client)}
-                            title="Editar Cliente"
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
+                            title="Editar"
+                            className="p-1 rounded-md text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             id={`btn-delete-client-${client.cleanCnpj}`}
                             onClick={() => handleDeleteClient(client)}
-                            title="Excluir Cliente"
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                            title="Excluir"
+                            className="p-1 rounded-md text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -264,15 +284,15 @@ export const ClientsPage: React.FC = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 dark:text-slate-500">
-                    <Building2 className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    <p className="font-medium">
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <Building2 className="w-6 h-6 mx-auto mb-2 opacity-30" />
+                    <p className="font-medium text-xs">
                       {searchQuery
                         ? 'Nenhum cliente encontrado com este termo.'
                         : 'Nenhum cliente cadastrado ainda.'}
                     </p>
-                    <p className="text-[11px] mt-1">
-                      Os clientes serão cadastrados automaticamente ou você pode clicar no botão acima.
+                    <p className="text-[11px] mt-0.5">
+                      Os clientes são registrados automaticamente ao processar notas fiscais.
                     </p>
                   </td>
                 </tr>
@@ -284,31 +304,31 @@ export const ClientsPage: React.FC = () => {
 
       {/* Modal Add/Edit Client */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
-              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-lg overflow-hidden animate-in fade-in duration-150">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                 {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 flex items-center justify-center transition-colors cursor-pointer"
+                className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveClient} className="p-6 space-y-4">
+            <form onSubmit={handleSaveClient} className="p-5 space-y-3.5">
               {errorMessage && (
-                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
               )}
 
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  CNPJ (apenas números ou formatado) *
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">
+                  CNPJ *
                 </label>
                 <input
                   id="input-modal-client-cnpj"
@@ -316,13 +336,13 @@ export const ClientsPage: React.FC = () => {
                   value={cnpjInput}
                   onChange={(e) => setCnpjInput(e.target.value)}
                   placeholder="00.000.000/0000-00"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-mono font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-xs font-mono focus:outline-hidden focus:border-slate-400"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Nome Utilizado pelo Sistema (para pastas e arquivos) *
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">
+                  Nome do Cliente (para pastas e arquivos) *
                 </label>
                 <input
                   id="input-modal-client-name"
@@ -330,13 +350,13 @@ export const ClientsPage: React.FC = () => {
                   value={customNameInput}
                   onChange={(e) => setCustomNameInput(e.target.value)}
                   placeholder="Ex: ACME LOGISTICA"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-bold focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-hidden focus:border-slate-400"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Razão Social Completa (opcional)
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">
+                  Razão Social (opcional)
                 </label>
                 <input
                   id="input-modal-client-razao"
@@ -344,12 +364,12 @@ export const ClientsPage: React.FC = () => {
                   value={razaoSocialInput}
                   onChange={(e) => setRazaoSocialInput(e.target.value)}
                   placeholder="Ex: ACME Logística e Distribuição S.A."
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-xs focus:outline-hidden focus:border-slate-400"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">
                   Nome Fantasia (opcional)
                 </label>
                 <input
@@ -358,14 +378,14 @@ export const ClientsPage: React.FC = () => {
                   value={nomeFantasiaInput}
                   onChange={(e) => setNomeFantasiaInput(e.target.value)}
                   placeholder="Ex: ACME Log"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-xs focus:outline-hidden focus:border-slate-400"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    E-mail do Cliente (para envio de notas)
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">
+                    E-mail
                   </label>
                   <input
                     id="input-modal-client-email"
@@ -373,13 +393,13 @@ export const ClientsPage: React.FC = () => {
                     value={emailInput}
                     onChange={(e) => setEmailInput(e.target.value)}
                     placeholder="financeiro@empresa.com"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-xs focus:outline-hidden focus:border-slate-400"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    WhatsApp / Celular (com DDD)
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">
+                    Telefone
                   </label>
                   <input
                     id="input-modal-client-phone"
@@ -387,25 +407,25 @@ export const ClientsPage: React.FC = () => {
                     value={phoneInput}
                     onChange={(e) => setPhoneInput(e.target.value)}
                     placeholder="(11) 99999-9999"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-xs focus:outline-hidden focus:border-slate-400"
                   />
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   id="btn-save-client-modal"
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-colors cursor-pointer"
+                  className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
                 >
-                  Salvar Cliente
+                  Salvar
                 </button>
               </div>
             </form>

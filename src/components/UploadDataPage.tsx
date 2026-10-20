@@ -7,17 +7,12 @@ import {
   CheckCircle2,
   AlertTriangle,
   RefreshCw,
-  Clock,
   Sparkles,
   ArrowRight,
   UploadCloud,
-  Check,
   Trash2,
-  Database,
   Eye,
-  Building2,
   History as HistoryIcon,
-  ShieldCheck,
   FileCheck,
 } from 'lucide-react';
 import { HistoryRecord, ExtractedInvoiceData, InvoiceStatus } from '../types';
@@ -72,7 +67,7 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
     );
 
     setSelectedFiles(pdfs);
-    setFolderName(folderLabel || `${pdfs.length} arquivos PDF selecionados`);
+    setFolderName(folderLabel || `${pdfs.length} notas em PDF selecionadas`);
     setCompletedSummary(null);
 
     const initialItems: IngestedItem[] = pdfs.map((file, idx) => ({
@@ -95,7 +90,6 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
         (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
       );
 
-      // Detecta nome da pasta raiz
       const firstRelPath = allFiles[0].webkitRelativePath || '';
       const dirName = firstRelPath ? firstRelPath.split('/')[0] : 'Pasta selecionada';
 
@@ -122,7 +116,7 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
 
   const handleLoadSamples = () => {
     const sampleFiles = generateSampleInvoiceFiles();
-    prepareFiles(sampleFiles, 'Pasta de Exemplo (5 Notas Fiscais Demonstrativas)');
+    prepareFiles(sampleFiles, 'Exemplos Demonstrativos (5 Notas Fiscais)');
   };
 
   const handleClearSelection = () => {
@@ -151,12 +145,10 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
       setCurrentIndex(i + 1);
       const current = updatedItems[i];
 
-      // Atualiza status para analisando
       current.status = 'ANALISANDO';
       setItems([...updatedItems]);
 
       try {
-        // 1. Extração estruturada dos dados da nota fiscal (separando Prestador vs Tomador)
         const extracted = await analyzeInvoicePDF(current.file, current.originalFileName);
         current.extractedData = extracted;
 
@@ -166,7 +158,6 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
         const clean = extracted.selectedClient?.cleanCnpj || '00000000000000';
         const val = extracted.valorTotal || 0;
 
-        // Auto-cadastro de nova empresa se selecionado e identificada
         if (
           autoRegisterClients &&
           extracted.selectedClient &&
@@ -182,7 +173,6 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
           }
         }
 
-        // 2. Upload para o Supabase Storage Privado
         let storageBucket = 'notas-fiscais';
         let storagePath = '';
         let storageUrl = '';
@@ -197,16 +187,14 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
           storageViewUrl = up.viewUrl || '';
           storageDownloadUrl = up.downloadUrl || '';
         } catch (storageErr) {
-          console.warn('Upload de PDF em fallback local:', storageErr);
+          console.warn('Upload de PDF:', storageErr);
         }
 
-        // 3. Geração do nome padronizado
         const generatedFileName = generateInvoiceFileName(extracted, clientName);
         const safeCloudPath = storageViewUrl || generatedFileName;
 
         const recordStatus: InvoiceStatus = isKnown ? 'PROCESSADO' : 'REVISAR';
 
-        // 4. Gravação direta no Histórico Persistente
         const savedRecord = db.addHistoryRecord({
           originalFileName: current.originalFileName,
           generatedFileName,
@@ -233,10 +221,9 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
           blobStorageName: storageBucket,
           status: recordStatus,
           identificationMethod: extracted.identificationMethod,
-          diagnosticSummary: extracted.diagnosticNotes || 'Importado via Subir Dados para o Histórico',
+          diagnosticSummary: extracted.diagnosticNotes || 'Importado via Subir Dados',
         });
 
-        // Atualiza estatísticas do cliente
         if (clean && clean !== '00000000000000') {
           db.incrementClientStats(clean, val);
         }
@@ -269,44 +256,48 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
     onDataUploaded();
   };
 
-  const getStatusBadge = (status: IngestedItem['status']) => {
+  const getStatusText = (status: IngestedItem['status']) => {
     switch (status) {
       case 'SUCESSO':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
-            <CheckCircle2 className="w-3 h-3" /> No Histórico
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            No Histórico
           </span>
         );
       case 'REVISAR':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300">
-            <AlertTriangle className="w-3 h-3" /> Pendente Revisão
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Revisão
           </span>
         );
       case 'ANALISANDO':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300">
-            <RefreshCw className="w-3 h-3 animate-spin" /> Analisando
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+            <RefreshCw className="w-3 h-3 animate-spin text-slate-500" />
+            Analisando
           </span>
         );
       case 'ERRO':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300">
-            Falha
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+            Erro
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-            <Clock className="w-3 h-3" /> Aguardando
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+            Aguardando
           </span>
         );
     }
   };
 
   return (
-    <div className="p-8 space-y-6 max-w-7xl mx-auto text-slate-900 dark:text-slate-100">
-      {/* Inputs Ocultos */}
+    <div className="p-8 max-w-5xl mx-auto space-y-6 text-slate-900 dark:text-slate-100 animate-in fade-in duration-200">
       <input
         type="file"
         ref={folderInputRef}
@@ -323,31 +314,27 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
         className="hidden"
       />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header Minimalista */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5">
-              <FolderUp className="w-6 h-6 text-blue-600 dark:text-blue-400" /> Subir Dados
-            </h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
-              <Database className="w-3 h-3" /> Importação Direta
-            </span>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Selecione uma pasta com notas fiscais para analisar o conteúdo e registrar diretamente no histórico do sistema.
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Subir Dados
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Importação direta de pastas ou lotes de notas fiscais para o histórico do sistema.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           {items.length > 0 && (
             <button
               id="btn-clear-upload-selection"
               onClick={handleClearSelection}
               disabled={isProcessing}
-              className="px-3.5 py-2 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer disabled:opacity-40"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Limpar Seleção
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Limpar seleção</span>
             </button>
           )}
 
@@ -355,14 +342,15 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
             id="btn-upload-load-samples"
             onClick={handleLoadSamples}
             disabled={isProcessing}
-            className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer disabled:opacity-40"
           >
-            <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Testar com Notas de Exemplo
+            <Sparkles className="w-3.5 h-3.5 text-slate-500" />
+            <span>Exemplos de teste</span>
           </button>
         </div>
       </div>
 
-      {/* Dropzone e Seleção de Pasta */}
+      {/* Dropzone Minimalista */}
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -370,54 +358,44 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
         }}
         onDragLeave={() => setIsDragOver(false)}
         onDrop={handleDrop}
-        className={`p-8 rounded-3xl border-2 transition-all ${
+        className={`p-6 rounded-2xl border transition-colors ${
           isDragOver
-            ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-950/40 ring-4 ring-blue-500/10'
+            ? 'border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-900'
             : selectedFiles.length > 0
-            ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-950/20'
-            : 'border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-blue-400 dark:hover:border-blue-500'
+            ? 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900'
+            : 'border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-400 dark:hover:border-slate-600'
         }`}
       >
-        <div className="flex flex-col items-center text-center max-w-xl mx-auto space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-inner">
+        <div className="flex flex-col items-center text-center max-w-md mx-auto space-y-3">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
             {selectedFiles.length > 0 ? (
-              <FileCheck className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+              <FileCheck className="w-5 h-5" />
             ) : (
-              <UploadCloud className="w-7 h-7" />
+              <UploadCloud className="w-5 h-5" />
             )}
           </div>
 
           <div>
-            {selectedFiles.length > 0 ? (
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  {folderName}
-                </h3>
-                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
-                  {selectedFiles.length} notas fiscais em PDF carregadas e prontas para análise
-                </p>
-              </div>
-            ) : (
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Arraste uma pasta inteira ou selecione os arquivos PDF
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  O sistema irá escanear todos os documentos, extrair dados fiscais e alimentar o histórico.
-                </p>
-              </div>
-            )}
+            <h3 className="text-xs font-semibold text-slate-900 dark:text-white">
+              {selectedFiles.length > 0 ? folderName : 'Selecione uma pasta ou arquivos PDF'}
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {selectedFiles.length > 0
+                ? `${selectedFiles.length} notas fiscais carregadas e prontas`
+                : 'Arraste a pasta para cá ou use os botões abaixo'}
+            </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <div className="flex items-center gap-2 pt-1">
             <button
               id="btn-select-folder-to-ingest"
               type="button"
               disabled={isProcessing}
               onClick={() => folderInputRef.current?.click()}
-              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              className="px-3.5 py-1.5 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 disabled:opacity-40 text-xs font-semibold transition-opacity flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
-              <FolderOpen className="w-4 h-4" /> Selecionar Pasta
+              <FolderOpen className="w-3.5 h-3.5" />
+              <span>Selecionar pasta</span>
             </button>
 
             <button
@@ -425,132 +403,120 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
               type="button"
               disabled={isProcessing}
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <FileText className="w-4 h-4" /> Selecionar Arquivos PDF
+              <FileText className="w-3.5 h-3.5 text-slate-500" />
+              <span>Arquivos soltos</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Painel de Controle de Ingestão */}
+      {/* Painel de Ingestão Minimalista */}
       {selectedFiles.length > 0 && (
-        <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                Opções de Análise e Ingestão
-              </h2>
-              <label className="flex items-center gap-2.5 cursor-pointer pt-1">
-                <input
-                  type="checkbox"
-                  checked={autoRegisterClients}
-                  onChange={(e) => setAutoRegisterClients(e.target.checked)}
-                  disabled={isProcessing}
-                  className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-700 focus:ring-blue-500 cursor-pointer"
-                />
-                <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">
-                  Cadastrar automaticamente novos clientes identificados nas notas
-                </span>
-              </label>
-            </div>
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={autoRegisterClients}
+              onChange={(e) => setAutoRegisterClients(e.target.checked)}
+              disabled={isProcessing}
+              className="w-4 h-4 text-slate-900 rounded border-slate-300 dark:border-slate-700 focus:ring-0 cursor-pointer"
+            />
+            <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">
+              Cadastrar automaticamente novos clientes identificados
+            </span>
+          </label>
 
-            <button
-              id="btn-start-ingest-to-history"
-              type="button"
-              onClick={handleStartIngestion}
-              disabled={isProcessing || items.length === 0}
-              className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
-            >
-              {isProcessing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Analisando e Gravando ({currentIndex}/{items.length})...</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4 fill-white" />
-                  <span>Analisar e Subir para o Histórico ({items.length} notas)</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Barra de Progresso durante processamento */}
-          {isProcessing && (
-            <div className="space-y-2 pt-2">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-300">
-                <span>Progresso da Ingestão</span>
-                <span>{Math.round((currentIndex / items.length) * 100)}%</span>
-              </div>
-              <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-600 transition-all duration-300 rounded-full"
-                  style={{ width: `${(currentIndex / items.length) * 100}%` }}
-                />
-              </div>
-            </div>
-          )}
+          <button
+            id="btn-start-ingest-to-history"
+            type="button"
+            onClick={handleStartIngestion}
+            disabled={isProcessing || items.length === 0}
+            className="px-4 py-2 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 disabled:opacity-40 text-xs font-semibold transition-opacity flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+          >
+            {isProcessing ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Importando ({currentIndex}/{items.length})...</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Importar {items.length} notas para o Histórico</span>
+              </>
+            )}
+          </button>
         </div>
       )}
 
-      {/* Resumo de Sucesso após conclusão */}
+      {/* Progresso Minimalista */}
+      {isProcessing && (
+        <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
+            <span>Progresso da importação</span>
+            <span className="font-mono">{Math.round((currentIndex / items.length) * 100)}%</span>
+          </div>
+          <div className="w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-slate-900 dark:bg-white transition-all duration-200 rounded-full"
+              style={{ width: `${(currentIndex / items.length) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Resumo Concluído */}
       {completedSummary && (
-        <div className="p-6 bg-emerald-50/80 dark:bg-emerald-950/30 rounded-3xl border border-emerald-200 dark:border-emerald-800/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold text-sm">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <span>Ingestão Concluída! {completedSummary.total} notas fiscais processadas.</span>
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-900 dark:text-white">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Importação concluída: {completedSummary.total} notas processadas</span>
             </div>
-            <p className="text-xs text-emerald-700/80 dark:text-emerald-400">
-              • <strong>{completedSummary.success}</strong> notas identificadas e gravadas com sucesso •{' '}
-              {completedSummary.pending > 0 && (
-                <span><strong>{completedSummary.pending}</strong> requerem atenção no Histórico • </span>
-              )}
-              <strong>{completedSummary.clientsAdded}</strong> novos clientes cadastrados.
+            <p className="text-[11px] text-slate-400">
+              {completedSummary.success} salvas · {completedSummary.pending} requerem revisão · {completedSummary.clientsAdded} clientes adicionados
             </p>
           </div>
 
           <button
             id="btn-go-to-history"
             onClick={() => onNavigateTab('history')}
-            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 transition-colors cursor-pointer shrink-0"
           >
-            <HistoryIcon className="w-4 h-4" />
-            <span>Ver no Histórico Completo</span>
-            <ArrowRight className="w-4 h-4" />
+            <HistoryIcon className="w-3.5 h-3.5 text-slate-500" />
+            <span>Ver no Histórico</span>
+            <ArrowRight className="w-3 h-3" />
           </button>
         </div>
       )}
 
-      {/* Lista / Tabela de Notas Sendo Ingeridas */}
+      {/* Tabela de Arquivos */}
       {items.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden">
-          <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-slate-500" />
-              Lista de Notas Fiscais da Pasta ({items.length})
-            </h3>
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              {items.filter((i) => i.status === 'SUCESSO').length} gravadas no histórico
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden">
+          <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+              Notas da Pasta ({items.length})
+            </span>
+            <span className="text-xs text-slate-400">
+              {items.filter((i) => i.status === 'SUCESSO').length} gravadas
             </span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
+              <thead className="bg-slate-50/75 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="px-5 py-3">Arquivo Original</th>
-                  <th className="px-5 py-3">Número NF</th>
-                  <th className="px-5 py-3">Cliente / Tomador</th>
-                  <th className="px-5 py-3">CNPJ</th>
-                  <th className="px-5 py-3">Valor Total</th>
-                  <th className="px-5 py-3">Status no Histórico</th>
-                  <th className="px-5 py-3 text-right">Ações</th>
+                  <th className="py-2.5 px-4">Arquivo</th>
+                  <th className="py-2.5 px-4">Número</th>
+                  <th className="py-2.5 px-4">Cliente (Tomador)</th>
+                  <th className="py-2.5 px-4">CNPJ</th>
+                  <th className="py-2.5 px-4 text-right">Valor</th>
+                  <th className="py-2.5 px-4">Status</th>
+                  <th className="py-2.5 px-4 text-right">Ação</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {items.map((item) => {
                   const ext = item.extractedData;
                   const client = ext?.selectedClient;
@@ -558,53 +524,47 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
                   return (
                     <tr
                       key={item.id}
-                      className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
+                      className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors"
                     >
-                      <td className="px-5 py-3.5 max-w-xs">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-slate-400 shrink-0" />
-                          <span className="truncate font-medium text-slate-800 dark:text-slate-200" title={item.originalFileName}>
-                            {item.originalFileName}
-                          </span>
-                        </div>
+                      <td className="py-2.5 px-4 max-w-xs">
+                        <span className="font-medium text-slate-900 dark:text-slate-100 block truncate" title={item.originalFileName}>
+                          {item.originalFileName}
+                        </span>
                       </td>
 
-                      <td className="px-5 py-3.5 font-mono text-slate-700 dark:text-slate-300">
+                      <td className="py-2.5 px-4 font-mono text-slate-700 dark:text-slate-300">
                         {ext?.numeroNota || '-'}
                       </td>
 
-                      <td className="px-5 py-3.5">
+                      <td className="py-2.5 px-4 max-w-[180px]">
                         {client ? (
-                          <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-slate-100">
-                            <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                            <span className="truncate max-w-[180px]" title={client.name}>
-                              {client.name}
-                            </span>
-                          </div>
+                          <span className="font-medium text-slate-800 dark:text-slate-200 block truncate">
+                            {client.name}
+                          </span>
                         ) : (
-                          <span className="text-slate-400 italic">Pendente de análise</span>
+                          <span className="text-slate-400 text-[11px]">Pendente de análise</span>
                         )}
                       </td>
 
-                      <td className="px-5 py-3.5 font-mono text-slate-600 dark:text-slate-400">
+                      <td className="py-2.5 px-4 font-mono text-slate-600 dark:text-slate-400 text-[11px]">
                         {client?.cnpj || '-'}
                       </td>
 
-                      <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-slate-100">
+                      <td className="py-2.5 px-4 text-right font-mono font-medium text-slate-900 dark:text-slate-100 tabular-nums">
                         {ext?.valorTotalFormatted || '-'}
                       </td>
 
-                      <td className="px-5 py-3.5">{getStatusBadge(item.status)}</td>
+                      <td className="py-2.5 px-4">{getStatusText(item.status)}</td>
 
-                      <td className="px-5 py-3.5 text-right">
+                      <td className="py-2.5 px-4 text-right">
                         {item.historyRecord && (
                           <button
                             type="button"
                             onClick={() => setSelectedPdfToView(item.historyRecord)}
-                            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
                             title="Visualizar PDF"
                           >
-                            <Eye className="w-3.5 h-3.5" />
+                            <Eye className="w-3 h-3" /> PDF
                           </button>
                         )}
                       </td>
@@ -617,7 +577,6 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
         </div>
       )}
 
-      {/* Modal Visualizador de PDF */}
       {selectedPdfToView && (
         <PdfViewerModal
           item={selectedPdfToView}

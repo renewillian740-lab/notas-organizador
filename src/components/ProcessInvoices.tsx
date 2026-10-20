@@ -5,14 +5,10 @@ import {
   FileText,
   CheckCircle2,
   AlertTriangle,
-  XCircle,
   Eye,
   Archive,
   RefreshCw,
-  Clock,
   Sparkles,
-  ArrowRight,
-  UploadCloud,
   Check,
   Trash2,
 } from 'lucide-react';
@@ -21,7 +17,6 @@ import { analyzeInvoicePDF } from '../services/pdfExtractor';
 import {
   generateInvoiceFileName,
   generateTargetFolderPath,
-  resolveDuplicateFileNames,
   createOrganizedZipArchive,
   saveOrganizedFilesToDirectoryHandle,
 } from '../services/fileOrganizer';
@@ -60,7 +55,6 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
 
-  // Manipulador de múltiplos arquivos PDF soltos
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const pdfs = Array.from(e.target.files).filter(
@@ -72,7 +66,6 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
     }
   };
 
-  // Manipulador de pasta (HTML input com filtro estrito de raiz)
   const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const allFiles = Array.from(e.target.files);
@@ -99,7 +92,6 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
     }
   };
 
-  // Drag & drop
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragOver(false);
@@ -116,7 +108,6 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
     }
   };
 
-  // Preparar os itens no estado inicial e enviar PDFs originais para o Supabase Storage Privado
   const prepareItems = (files: File[]) => {
     const items: InvoiceItem[] = files.map((file, idx) => ({
       id: `inv-${Date.now()}-${idx}-${file.name.replace(/\W/g, '_')}`,
@@ -127,13 +118,13 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
       targetFolderPath: 'Aguardando processamento',
       destinationFilePath: file.name,
       status: 'PENDENTE',
-      statusMessage: 'Enviando PDF original ao Supabase Storage Privado...',
+      statusMessage: 'Aguardando análise...',
       extractedData: null,
     }));
     setInvoiceItems(items);
     setExportSuccessMessage(null);
 
-    // Upload imediato do PDF ORIGINAL para o Supabase Storage
+    // Upload seguro para armazenamento em nuvem
     items.forEach(async (item) => {
       try {
         const uploadRes = await storageService.uploadOriginalPdf(item.file);
@@ -148,25 +139,20 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
                   storageViewUrl: uploadRes.viewUrl,
                   storageDownloadUrl: uploadRes.downloadUrl,
                   isRemoteUploaded: uploadRes.isRemoteUploaded,
-                  // Campos legados para compatibilidade
                   blobUrl: uploadRes.url,
                   blobPathname: uploadRes.storagePath,
                   blobViewUrl: uploadRes.viewUrl,
                   blobDownloadUrl: uploadRes.downloadUrl,
-                  statusMessage: uploadRes.isRemoteUploaded
-                    ? 'PDF salvo no Supabase Storage Privado'
-                    : 'PDF retido no buffer seguro',
                 }
               : it
           )
         );
       } catch (err) {
-        console.warn(`Erro no upload ao Supabase Storage de ${item.originalFileName}:`, err);
+        console.warn(`Erro no upload de ${item.originalFileName}:`, err);
       }
     });
   };
 
-  // Iniciar seletor de diretório nativo moderno (File System Access API)
   const handlePickFolder = async () => {
     if ('showDirectoryPicker' in window) {
       try {
@@ -193,7 +179,6 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
         prepareItems(pdfFiles);
       } catch (err: any) {
         if (err.name !== 'AbortError') {
-          console.warn('Fallback para input de arquivo:', err);
           folderInputRef.current?.click();
         }
       }
@@ -202,10 +187,9 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
     }
   };
 
-  // Carregar dados de amostra instantâneos
   const handleLoadSamples = async () => {
     setIsAnalyzing(true);
-    setCurrentProcessingFile('Gerando 5 notas de teste sintéticas...');
+    setCurrentProcessingFile('Gerando notas sintéticas de teste...');
     try {
       const sampleFiles = await generateSampleInvoiceFiles();
       setSourceFiles(sampleFiles);
@@ -220,7 +204,6 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
     }
   };
 
-  // Executar a análise profunda de cada PDF
   const handleAnalyzeNotes = async () => {
     if (invoiceItems.length === 0) return;
 
@@ -279,11 +262,11 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
           destinationFilePath: `${folderPath}/${generatedFileName}`,
         };
       } catch (err: any) {
-        console.error(`Erro ao analisar ${current.originalFileName}:`, err);
+        console.error('Erro na análise:', err);
         updatedItems[i] = {
           ...current,
           status: 'ERRO',
-          statusMessage: `Falha na extração: ${err.message || 'Erro desconhecido'}`,
+          statusMessage: 'Falha ao ler o PDF: ' + (err.message || 'Erro desconhecido'),
         };
       }
 
@@ -291,65 +274,25 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
       setInvoiceItems([...updatedItems]);
     }
 
-    const resolvedNameMap = resolveDuplicateFileNames(
-      updatedItems.map((item) => ({
-        id: item.id,
-        targetFolderPath: item.targetFolderPath,
-        generatedFileName: item.generatedFileName,
-      }))
-    );
-
-    const finalItems = updatedItems.map((item) => {
-      const uniqueName = resolvedNameMap.get(item.id) || item.generatedFileName;
-      return {
-        ...item,
-        generatedFileName: uniqueName,
-        destinationFilePath: `${item.targetFolderPath}/${uniqueName}`,
-      };
-    });
-
-    setInvoiceItems(finalItems);
     setIsAnalyzing(false);
     setCurrentProcessingFile('');
   };
 
-  // Salvar revisão manual
-  const handleSaveItemReview = (
-    itemId: string,
-    updatedData: {
-      clientName: string;
-      cnpj: string;
-      registerNewClient: boolean;
-      manualNumber?: string;
-      manualDate?: string;
-      manualValue?: number;
-    }
-  ) => {
+  const handleSaveItemReview = (itemId: string, updatedData: any) => {
     const settings = db.getSettings();
 
     setInvoiceItems((prev) =>
       prev.map((item) => {
         if (item.id !== itemId) return item;
 
-        if (updatedData.registerNewClient && updatedData.cnpj) {
-          db.addOrUpdateClient({
-            cnpj: updatedData.cnpj,
-            customName: updatedData.clientName,
-          });
-        }
-
         const currentExtracted: ExtractedInvoiceData = item.extractedData || {
-          numeroNota: updatedData.manualNumber || 'S_N',
-          dataEmissao: updatedData.manualDate || '18/09/2026',
-          anoEmissao: '2026',
-          mesEmissao: '09',
-          mesExtenso: '09 - SETEMBRO',
-          valorTotal: updatedData.manualValue || null,
-          valorTotalFormatted: updatedData.manualValue
-            ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                updatedData.manualValue
-              )
-            : 'R$ 0,00',
+          numeroNota: 'S_N',
+          dataEmissao: '-',
+          anoEmissao: new Date().getFullYear().toString(),
+          mesEmissao: String(new Date().getMonth() + 1).padStart(2, '0'),
+          mesExtenso: `${String(new Date().getMonth() + 1).padStart(2, '0')} - COMPETÊNCIA`,
+          valorTotal: 0,
+          valorTotalFormatted: 'R$ 0,00',
           prestador: null,
           tomador: null,
           destinatario: null,
@@ -357,7 +300,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
           allCnpjs: [],
           selectedClient: null,
           identificationMethod: 'CONFIRMACAO_MANUAL',
-          diagnosticNotes: 'Confirmado manualmente.',
+          diagnosticNotes: 'Criado via revisão manual',
           candidateClients: [],
           hasText: true,
           needsOcr: false,
@@ -404,7 +347,6 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
     );
   };
 
-  // Organizar e salvar
   const handleExecuteOrganization = async () => {
     if (invoiceItems.length === 0) return;
 
@@ -421,14 +363,12 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
       return;
     }
 
-    // Helper seguro para salvar item com PDF original no Supabase Storage e persistência no banco
     const saveItemToDatabaseAndBlob = async (it: InvoiceItem) => {
       const clientName = it.extractedData?.selectedClient?.name || 'Cliente';
       const cnpj = it.extractedData?.selectedClient?.cnpj || '';
       const clean = it.extractedData?.selectedClient?.cleanCnpj || '';
       const val = it.extractedData?.valorTotal || 0;
 
-      // 1. Garante upload do PDF original para o Supabase Storage Privado
       let storageBucket = it.storageBucket || 'notas-fiscais';
       let storagePath = it.storagePath || it.blobPathname;
       let storageUrl = it.storageUrl || it.blobUrl;
@@ -444,11 +384,10 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
           storageViewUrl = up.viewUrl;
           storageDownloadUrl = up.downloadUrl;
         } catch (storageErr) {
-          console.warn('Erro ao assegurar upload do original ao Supabase Storage:', storageErr);
+          console.warn('Erro ao assegurar upload:', storageErr);
         }
       }
 
-      // 2. Caminho seguro de nuvem (NUNCA usa caminhos locais como /Users/.../Downloads/)
       const safeCloudPath = storageViewUrl || it.destinationFilePath;
 
       db.addHistoryRecord({
@@ -470,7 +409,6 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
         storageViewUrl,
         storageDownloadUrl,
         storageProvider: 'supabase',
-        // Campos legados para compatibilidade
         blobUrl: storageUrl,
         blobPathname: storagePath,
         blobViewUrl: storageViewUrl,
@@ -478,7 +416,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
         blobStorageName: storageBucket,
         status: 'PROCESSADO',
         identificationMethod: it.extractedData?.identificationMethod || 'IDENTIFICACAO_AUTOMATICA',
-        diagnosticSummary: it.extractedData?.diagnosticNotes || 'Organizado e persistido no Supabase',
+        diagnosticSummary: it.extractedData?.diagnosticNotes || 'Organizado no sistema',
         rawTextSnippet: it.extractedData?.rawText?.slice(0, 500),
       });
 
@@ -504,7 +442,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
         }
 
         setExportSuccessMessage(
-          `Sucesso! ${result.successCount} notas foram salvas e organizadas diretamente nas subpastas e sincronizadas com o Supabase Storage Privado.`
+          `Sucesso! ${result.successCount} notas organizadas nas subpastas.`
         );
       } else {
         await createOrganizedZipArchive(
@@ -521,7 +459,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
         }
 
         setExportSuccessMessage(
-          `Download concluído! Arquivo ZIP gerado contendo todas as subpastas estruturadas e sincronizadas com o Supabase Storage Privado.`
+          `Download concluído! Arquivo ZIP gerado contendo todas as subpastas estruturadas.`
         );
       }
 
@@ -550,23 +488,56 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
     (item) => item.status === 'PROCESSADO' || item.status === 'IDENTIFICADO'
   ).length;
 
-  const currentStep =
-    invoiceItems.length === 0
-      ? 1
-      : invoiceItems.some((i) => i.extractedData === null)
-      ? 2
-      : 3;
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'PROCESSADO':
+        return (
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Salvo
+          </span>
+        );
+      case 'IDENTIFICADO':
+        return (
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Pronto
+          </span>
+        );
+      case 'REVISAR':
+        return (
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Revisar
+          </span>
+        );
+      case 'ERRO':
+        return (
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+            Erro
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+            Aguardando
+          </span>
+        );
+    }
+  };
 
   return (
-    <div className="p-8 space-y-6 max-w-7xl mx-auto text-slate-900 dark:text-slate-100">
-      {/* Top Header Simplificado */}
-      <div className="flex items-center justify-between">
+    <div className="p-8 max-w-5xl mx-auto space-y-6 text-slate-900 dark:text-slate-100 animate-in fade-in duration-200">
+      {/* Header Minimalista */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
             Processar Notas
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Selecione a pasta, analise as notas e crie as subpastas automaticamente.
+            Identifique tomadores, renomeie os arquivos e organize em pastas por competência.
           </p>
         </div>
 
@@ -582,25 +553,27 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
                 setTotalToAnalyze(0);
                 setCurrentProcessingFile('');
               }}
-              className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Limpar Lista
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Limpar</span>
             </button>
           )}
 
           <button
             id="btn-load-sample-invoices"
             onClick={handleLoadSamples}
-            className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Testar com Notas de Exemplo
+            <Sparkles className="w-3.5 h-3.5 text-slate-500" />
+            <span>Exemplos de teste</span>
           </button>
         </div>
       </div>
 
-      {/* Fluxo Visual em 3 Passos */}
+      {/* Fluxo de 3 Passos Minimalista */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Passo 1 */}
+        {/* Passo 1: Selecionar */}
         <div
           onClick={handlePickFolder}
           onDragOver={(e) => {
@@ -609,71 +582,38 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
           }}
           onDragLeave={() => setIsDragOver(false)}
           onDrop={handleDrop}
-          className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+          className={`p-4 rounded-2xl border transition-colors cursor-pointer flex flex-col justify-between ${
             isDragOver
-              ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-950/40 ring-2 ring-blue-500/20'
-              : sourceFiles.length > 0
-              ? 'border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/40 dark:bg-emerald-950/30 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/50'
-              : 'border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+              ? 'border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-900'
+              : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
           }`}
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                sourceFiles.length > 0 ? 'bg-emerald-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-              }`}>
-                {sourceFiles.length > 0 ? <Check className="w-3.5 h-3.5" /> : '1'}
-              </span>
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                Selecionar Pasta
-              </span>
-            </div>
-            <FolderOpen className={`w-5 h-5 ${sourceFiles.length > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+              Passo 1
+            </span>
+            <FolderOpen className="w-4 h-4 text-slate-400" />
           </div>
 
           <div>
-            {sourceFiles.length > 0 ? (
-              <div>
-                <p className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">{sourceDirName}</p>
-                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mt-0.5">
-                  {sourceFiles.length} notas PDF encontradas na raiz
-                </p>
-              </div>
-            ) : (
-              <div>
-                <p className="font-bold text-slate-700 dark:text-slate-300 text-xs">Clique para escolher a pasta</p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">ou arraste os PDFs para cá</p>
-              </div>
-            )}
+            <span className="text-xs font-bold text-slate-900 dark:text-white block">
+              {sourceFiles.length > 0 ? sourceDirName : 'Selecionar pasta de notas'}
+            </span>
+            <span className="text-[11px] text-slate-400 mt-0.5 block">
+              {sourceFiles.length > 0
+                ? `${sourceFiles.length} notas em PDF carregadas`
+                : 'Clique ou arraste arquivos aqui'}
+            </span>
           </div>
         </div>
 
-        {/* Passo 2 */}
-        <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${
-          currentStep === 2 && !isAnalyzing
-            ? 'border-blue-300 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/30 shadow-xs'
-            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
-        }`}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                invoiceItems.length > 0 && invoiceItems.every((i) => i.extractedData !== null)
-                  ? 'bg-emerald-600 text-white'
-                  : currentStep === 2
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-              }`}>
-                {invoiceItems.length > 0 && invoiceItems.every((i) => i.extractedData !== null) ? (
-                  <Check className="w-3.5 h-3.5" />
-                ) : (
-                  '2'
-                )}
-              </span>
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                Analisar Dados
-              </span>
-            </div>
-            <Play className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+        {/* Passo 2: Analisar */}
+        <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+              Passo 2
+            </span>
+            <Play className="w-4 h-4 text-slate-400" />
           </div>
 
           <div>
@@ -681,47 +621,30 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
               id="btn-analyze-invoices"
               disabled={invoiceItems.length === 0 || isAnalyzing}
               onClick={handleAnalyzeNotes}
-              className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2 px-3 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 disabled:opacity-30 text-xs font-semibold transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
             >
               {isAnalyzing ? (
                 <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Analisando ({analyzedCount}/{totalToAnalyze})...
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Analisando ({analyzedCount}/{totalToAnalyze})</span>
                 </>
               ) : (
                 <>
-                  <Play className="w-3.5 h-3.5" /> Analisar {invoiceItems.length > 0 ? `(${invoiceItems.length} Notas)` : ''}
+                  <Play className="w-3.5 h-3.5" />
+                  <span>Analisar {invoiceItems.length > 0 ? `(${invoiceItems.length})` : ''}</span>
                 </>
               )}
             </button>
           </div>
         </div>
 
-        {/* Passo 3 */}
-        <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${
-          processedSuccessCount > 0
-            ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/30 shadow-xs'
-            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
-        }`}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                invoiceItems.some((i) => i.status === 'PROCESSADO')
-                  ? 'bg-emerald-600 text-white'
-                  : processedSuccessCount > 0
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-              }`}>
-                {invoiceItems.some((i) => i.status === 'PROCESSADO') ? (
-                  <Check className="w-3.5 h-3.5" />
-                ) : (
-                  '3'
-                )}
-              </span>
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                Organizar Subpastas
-              </span>
-            </div>
-            <Archive className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+        {/* Passo 3: Organizar */}
+        <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+              Passo 3
+            </span>
+            <Archive className="w-4 h-4 text-slate-400" />
           </div>
 
           <div>
@@ -729,15 +652,17 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
               id="btn-execute-organize"
               disabled={processedSuccessCount === 0 || isExporting || isAnalyzing}
               onClick={handleExecuteOrganization}
-              className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2 px-3 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 disabled:opacity-30 text-xs font-semibold transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
             >
               {isExporting ? (
                 <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Criando Pastas...
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Criando pastas...</span>
                 </>
               ) : (
                 <>
-                  <Archive className="w-3.5 h-3.5" /> Criar Pastas & Salvar {processedSuccessCount > 0 ? `(${processedSuccessCount})` : ''}
+                  <Archive className="w-3.5 h-3.5" />
+                  <span>Organizar {processedSuccessCount > 0 ? `(${processedSuccessCount})` : ''}</span>
                 </>
               )}
             </button>
@@ -745,7 +670,6 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
         </div>
       </div>
 
-      {/* Hidden inputs para compatibilidade de arquivos */}
       <input
         type="file"
         ref={folderInputRef}
@@ -765,18 +689,18 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
 
       {/* Barra de Progresso Durante Análise */}
       {isAnalyzing && (
-        <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 space-y-2">
+        <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-blue-900 dark:text-blue-200">
+            <span className="font-medium text-slate-700 dark:text-slate-300">
               Analisando {analyzedCount} de {totalToAnalyze} notas...
             </span>
-            <span className="text-blue-700 dark:text-blue-300 font-mono text-[11px] truncate max-w-xs">
+            <span className="text-slate-400 font-mono text-[11px] truncate max-w-xs">
               {currentProcessingFile}
             </span>
           </div>
-          <div className="w-full h-2 bg-blue-200 dark:bg-blue-900/60 rounded-full overflow-hidden">
+          <div className="w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-600 transition-all duration-200"
+              className="h-full bg-slate-900 dark:bg-white transition-all duration-200"
               style={{
                 width: `${(analyzedCount / Math.max(1, totalToAnalyze)) * 100}%`,
               }}
@@ -785,16 +709,16 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
         </div>
       )}
 
-      {/* Feedback de Sucesso */}
+      {/* Sucesso Discreto */}
       {exportSuccessMessage && (
-        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs font-semibold flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs text-slate-800 dark:text-slate-200">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{exportSuccessMessage}</span>
           </div>
           <button
             onClick={() => setExportSuccessMessage(null)}
-            className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-200 font-bold text-xs cursor-pointer"
+            className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
           >
             Fechar
           </button>
@@ -803,133 +727,107 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
 
       {/* Alerta de Revisão Pendente */}
       {pendingReviewItems.length > 0 && !isAnalyzing && (
-        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-200">
-            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs text-slate-800 dark:text-slate-200">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
             <span>
-              <strong>{pendingReviewItems.length} nota(s)</strong> precisam de confirmação rápida do cliente.
+              <strong>{pendingReviewItems.length} nota(s)</strong> requerem confirmação do tomador.
             </span>
           </div>
           <button
             id="btn-open-review-modal"
             onClick={() => setReviewModalOpen(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors shadow-xs cursor-pointer"
+            className="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-opacity cursor-pointer"
           >
-            Revisar Agora
+            Revisar
           </button>
         </div>
       )}
 
       {/* Tabela de Notas */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden">
+        <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-              Notas Encontradas
+            <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+              Arquivos Carregados
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold">
-              {invoiceItems.length}
+            <span className="text-xs text-slate-400">
+              ({invoiceItems.length})
             </span>
           </div>
 
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-3 text-xs text-slate-500">
             {processedSuccessCount > 0 && (
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold text-[11px]">
-                {processedSuccessCount} Prontas
-              </span>
+              <span>{processedSuccessCount} prontas</span>
             )}
             {pendingReviewItems.length > 0 && (
-              <span className="px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 font-bold text-[11px]">
-                {pendingReviewItems.length} Pendentes
-              </span>
+              <span>{pendingReviewItems.length} pendentes</span>
             )}
           </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50/80 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+            <thead className="bg-slate-50/75 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-[11px]">
               <tr>
-                <th className="py-3 px-5">Arquivo</th>
-                <th className="py-3 px-5">Destino (Subpasta)</th>
-                <th className="py-3 px-5">Cliente</th>
-                <th className="py-3 px-5">Número</th>
-                <th className="py-3 px-5">Data</th>
-                <th className="py-3 px-5">Valor</th>
-                <th className="py-3 px-5">Status</th>
-                <th className="py-3 px-5 text-right">Ação</th>
+                <th className="py-2.5 px-4">Arquivo</th>
+                <th className="py-2.5 px-4">Destino Previsto</th>
+                <th className="py-2.5 px-4">Cliente</th>
+                <th className="py-2.5 px-4">Número</th>
+                <th className="py-2.5 px-4">Emissão</th>
+                <th className="py-2.5 px-4 text-right">Valor</th>
+                <th className="py-2.5 px-4">Status</th>
+                <th className="py-2.5 px-4 text-right">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {invoiceItems.length > 0 ? (
                 invoiceItems.map((item) => {
                   const clientName =
-                    item.extractedData?.selectedClient?.name || 'Pendente';
+                    item.extractedData?.selectedClient?.name || 'Aguardando análise';
                   const num = item.extractedData?.numeroNota || '-';
                   const data = item.extractedData?.dataEmissao || '-';
                   const valor = item.extractedData?.valorTotalFormatted || '-';
 
                   return (
-                    <tr key={item.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-5">
-                        <div className="max-w-[180px] truncate">
-                          <span className="font-bold text-slate-900 dark:text-slate-100 block truncate" title={item.originalFileName}>
-                            {item.originalFileName}
-                          </span>
-                        </div>
+                    <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors">
+                      <td className="py-2.5 px-4 max-w-[180px]">
+                        <span className="font-medium text-slate-900 dark:text-slate-100 block truncate" title={item.originalFileName}>
+                          {item.originalFileName}
+                        </span>
                       </td>
-                      <td className="py-3 px-5">
-                        <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-[11px] block truncate max-w-[180px]" title={item.targetFolderPath}>
+                      <td className="py-2.5 px-4 max-w-[180px]">
+                        <span className="text-[11px] font-mono text-slate-500 block truncate" title={item.targetFolderPath}>
                           {item.targetFolderPath}
                         </span>
                       </td>
-                      <td className="py-3 px-5 font-semibold text-slate-800 dark:text-slate-200">
-                        {clientName}
+                      <td className="py-2.5 px-4 max-w-[160px]">
+                        <span className="font-medium text-slate-800 dark:text-slate-200 block truncate">
+                          {clientName}
+                        </span>
                       </td>
-                      <td className="py-3 px-5 font-mono text-slate-700 dark:text-slate-300">{num}</td>
-                      <td className="py-3 px-5 text-slate-600 dark:text-slate-400">{data}</td>
-                      <td className="py-3 px-5 font-bold text-emerald-700 dark:text-emerald-400">{valor}</td>
-                      <td className="py-3 px-5">
-                        {item.status === 'PROCESSADO' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
-                            <CheckCircle2 className="w-3 h-3" /> Salvo
-                          </span>
-                        ) : item.status === 'IDENTIFICADO' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300">
-                            <CheckCircle2 className="w-3 h-3" /> Pronto
-                          </span>
-                        ) : item.status === 'REVISAR' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300">
-                            <AlertTriangle className="w-3 h-3" /> Revisar
-                          </span>
-                        ) : item.status === 'ERRO' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300">
-                            <XCircle className="w-3 h-3" /> Erro
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                            <Clock className="w-3 h-3" /> Aguardando
-                          </span>
-                        )}
+                      <td className="py-2.5 px-4 font-mono text-slate-700 dark:text-slate-300">{num}</td>
+                      <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400 font-mono text-[11px]">{data}</td>
+                      <td className="py-2.5 px-4 text-right font-mono font-medium text-slate-900 dark:text-slate-100 tabular-nums">{valor}</td>
+                      <td className="py-2.5 px-4">
+                        {getStatusText(item.status)}
                       </td>
-                      <td className="py-3 px-5 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-2.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             id={`btn-view-pdf-proc-${item.id}`}
                             onClick={() => setSelectedPdfToView(item)}
-                            className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                            title="Visualizar PDF original no Vercel Blob"
+                            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                            title="Visualizar PDF"
                           >
-                            <FileText className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Visualizar PDF</span>
+                            <FileText className="w-3 h-3" /> PDF
                           </button>
                           <button
                             id={`btn-view-detail-${item.id}`}
                             onClick={() => setSelectedDetailItem(item)}
-                            className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
-                            title="Ver detalhes da nota"
+                            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3 h-3" /> Detalhes
                           </button>
                         </div>
                       </td>
@@ -938,11 +836,11 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={8} className="py-10 text-center text-slate-400 dark:text-slate-500">
-                    <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    <p className="font-semibold text-xs">Nenhuma nota selecionada.</p>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                      Clique no Passo 1 para selecionar a pasta do seu computador.
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                    <FileText className="w-6 h-6 mx-auto mb-2 opacity-30" />
+                    <p className="font-medium text-xs">Nenhuma nota selecionada.</p>
+                    <p className="text-[11px] mt-0.5">
+                      Selecione a pasta no Passo 1 ou teste com notas de exemplo.
                     </p>
                   </td>
                 </tr>
@@ -969,7 +867,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
         />
       )}
 
-      {/* Visualizador do PDF Original no Vercel Blob */}
+      {/* Visualizador do PDF */}
       {selectedPdfToView && (
         <PdfViewerModal
           item={selectedPdfToView}

@@ -8,14 +8,11 @@ import {
   FileText,
   Calendar,
   CalendarDays,
-  DollarSign,
   Building2,
   CheckCircle2,
   AlertTriangle,
-  XCircle,
   Eye,
   RefreshCw,
-  Database,
   Sparkles,
   Edit2,
   X,
@@ -33,7 +30,6 @@ import {
   groupHistoryByMonth,
   parseYearMonthFromRecord,
   formatBRL,
-  exportMonthlyGroupCSV,
 } from '../utils/monthUtils';
 
 interface HistoryPageProps {
@@ -76,7 +72,6 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
     loadHistory();
   }, []);
 
-  // Verifica se há notas com o emissor atribuído como cliente
   const issuerCnpj = cleanCNPJ(db.getSettings().issuerCnpj || '47042028000155');
   const hasMisidentifiedNotes = history.some(
     (h) =>
@@ -132,7 +127,6 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
     });
 
     if (updated) {
-      // Também cadastra ou atualiza o cliente na lista de clientes permanentes
       if (editClientName.trim()) {
         db.addOrUpdateClient({
           cnpj: formattedC || '00.000.000/0000-00',
@@ -260,25 +254,28 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
     }));
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusText = (status: string) => {
     switch (status) {
       case 'PROCESSADO':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
-            <CheckCircle2 className="w-3 h-3" /> Processado
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Processado
           </span>
         );
       case 'REVISAR':
       case 'PENDENTE':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300">
-            <AlertTriangle className="w-3 h-3" /> Revisão
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Revisão
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300">
-            <XCircle className="w-3 h-3" /> Erro
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+            Erro
           </span>
         );
     }
@@ -287,78 +284,71 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   const renderInvoiceRow = (item: HistoryRecord) => (
     <tr
       key={item.id}
-      className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
+      className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors"
     >
-      <td className="py-3.5 px-6">
-        <div className="space-y-0.5 max-w-xs truncate">
-          <div className="flex items-center gap-1.5">
-            <span
-              className="font-bold text-slate-900 dark:text-slate-100 block truncate"
-              title={item.generatedFileName}
-            >
-              {item.generatedFileName}
-            </span>
-          </div>
-          <span
-            className="text-[11px] text-slate-400 dark:text-slate-500 font-mono block truncate"
-            title={item.originalFileName}
-          >
-            Original: {item.originalFileName}
-          </span>
-        </div>
+      <td className="py-3 px-4 max-w-xs">
+        <span
+          className="font-medium text-slate-900 dark:text-slate-100 block truncate"
+          title={item.generatedFileName}
+        >
+          {item.generatedFileName}
+        </span>
+        <span
+          className="text-[11px] text-slate-400 font-mono block truncate"
+          title={item.originalFileName}
+        >
+          Original: {item.originalFileName}
+        </span>
       </td>
-      <td className="py-3.5 px-6">
-        <div className="flex items-center gap-1.5">
-          <span className="font-bold text-slate-800 dark:text-slate-200">
-            {item.clientName}
+      <td className="py-3 px-4">
+        <span className="font-medium text-slate-800 dark:text-slate-200 block truncate max-w-[200px]">
+          {item.clientName}
+        </span>
+        {item.clientName.toUpperCase().includes('RENE WILLIAN') && (
+          <span className="text-[10px] text-amber-600 font-medium block">
+            Emissor atribuído
           </span>
-          {item.clientName.toUpperCase().includes('RENE WILLIAN') && (
-            <span
-              className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-              title="Nota atribuída ao emissor. Clique em Editar ou Reidentificar para corrigir."
-            >
-              Emissor
-            </span>
-          )}
-        </div>
+        )}
       </td>
-      <td className="py-3.5 px-6 font-mono text-slate-600 dark:text-slate-400">
+      <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-400 text-[11px]">
         {item.cnpj || '-'}
       </td>
-      <td className="py-3.5 px-6 font-mono text-slate-800 dark:text-slate-200">
+      <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300">
         {item.invoiceNumber || 'S_N'}
       </td>
-      <td className="py-3.5 px-6 text-slate-600 dark:text-slate-400">
+      <td className="py-3 px-4 text-slate-600 dark:text-slate-400 font-mono text-[11px]">
         {item.invoiceDate}
       </td>
-      <td className="py-3.5 px-6 font-bold text-emerald-700 dark:text-emerald-400">
+      <td className="py-3 px-4 text-right font-mono font-medium text-slate-900 dark:text-slate-100 tabular-nums">
         {item.invoiceValueFormatted}
       </td>
-      <td className="py-3.5 px-6">{getStatusBadge(item.status)}</td>
-      <td className="py-3.5 px-6 text-right">
+      <td className="py-3 px-4">
+        {getStatusText(item.status)}
+      </td>
+      <td className="py-3 px-4 text-right">
         <div className="flex items-center justify-end gap-1.5">
           <button
             id={`btn-edit-history-${item.id}`}
             onClick={() => handleOpenEdit(item)}
-            className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors inline-flex items-center gap-1 font-semibold text-[11px] cursor-pointer"
-            title="Editar cliente ou dados da nota"
+            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
+            title="Editar cliente ou dados"
           >
-            <Edit2 className="w-3.5 h-3.5" /> Editar
+            <Edit2 className="w-3 h-3" /> Editar
           </button>
           <button
             id={`btn-view-pdf-history-${item.id}`}
             onClick={() => setSelectedPdfToView(item)}
-            className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors inline-flex items-center gap-1 font-semibold text-[11px] cursor-pointer"
-            title="Visualizar PDF original"
+            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
+            title="Visualizar PDF"
           >
-            <FileText className="w-3.5 h-3.5" /> PDF
+            <FileText className="w-3 h-3" /> PDF
           </button>
           <button
             id={`btn-view-history-detail-${item.id}`}
             onClick={() => onViewInvoiceDetails(item)}
-            className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors inline-flex items-center gap-1 font-semibold text-[11px] cursor-pointer"
+            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
           >
-            <Eye className="w-3.5 h-3.5" /> Detalhes
+            <Eye className="w-3 h-3" /> Detalhes
           </button>
         </div>
       </td>
@@ -366,48 +356,51 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   );
 
   return (
-    <div className="p-8 space-y-6 max-w-7xl mx-auto text-slate-900 dark:text-slate-100">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-8 max-w-5xl mx-auto space-y-6 text-slate-900 dark:text-slate-100 animate-in fade-in duration-200">
+      {/* Header Minimalista */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5">
-              <History className="w-6 h-6 text-blue-600 dark:text-blue-400" /> Histórico de Processamento
-            </h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
-              <Database className="w-3 h-3" /> Armazenamento Local
-            </span>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Registro consolidado de todas as notas fiscais organizadas e seus respectivos clientes tomadores.
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Histórico de Processamento
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Registro unificado de todas as notas fiscais organizadas no sistema.
           </p>
         </div>
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <button
-            id="btn-reprocess-fix-history"
-            onClick={handleAutoFixAll}
-            disabled={fixing || history.length === 0}
-            className="px-3.5 py-2 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold disabled:opacity-40 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-            title="Reidentifica automaticamente todas as notas separando o Prestador do Tomador"
-          >
-            <Sparkles className={`w-4 h-4 ${fixing ? 'animate-spin' : ''}`} />
-            {fixing ? 'Reidentificando...' : 'Reidentificar Clientes'}
-          </button>
+
+        {/* Ações Discretas */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {hasMisidentifiedNotes && (
+            <button
+              id="btn-reprocess-fix-history"
+              onClick={handleAutoFixAll}
+              disabled={fixing || history.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 transition-colors disabled:opacity-40 cursor-pointer"
+              title="Reidentificar automaticamente tomadores"
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${fixing ? 'animate-spin' : ''}`} />
+              <span>{fixing ? 'Reidentificando...' : 'Reidentificar'}</span>
+            </button>
+          )}
+
           <button
             onClick={loadHistory}
-            title="Sincronizar"
-            className="p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors cursor-pointer"
+            title="Recarregar"
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 transition-colors cursor-pointer"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
+
           <button
             id="btn-export-history-csv"
             onClick={handleExportCSV}
             disabled={history.length === 0}
-            className="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold disabled:opacity-40 transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors disabled:opacity-40 cursor-pointer"
           >
-            <Download className="w-4 h-4" /> Exportar CSV
+            <Download className="w-3.5 h-3.5" />
+            <span>Exportar CSV</span>
           </button>
+
           <button
             id="btn-clear-history"
             onClick={() => {
@@ -418,65 +411,83 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               }
             }}
             disabled={history.length === 0}
-            className="px-3.5 py-2 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold disabled:opacity-40 transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/40 transition-colors disabled:opacity-40 cursor-pointer"
           >
-            <Trash2 className="w-4 h-4" /> Zerar Tudo
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Limpar</span>
           </button>
         </div>
       </div>
 
-      {/* Banner de Sucesso pós-correção */}
+      {/* Banner de Feedback Discreto */}
       {fixSuccessMessage && (
-        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between gap-3 text-emerald-800 dark:text-emerald-300">
-          <div className="flex items-center gap-2.5 text-xs font-semibold">
-            <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs text-slate-800 dark:text-slate-200">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{fixSuccessMessage}</span>
           </div>
           <button
             onClick={() => setFixSuccessMessage(null)}
-            className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg text-emerald-700 dark:text-emerald-400"
+            className="text-slate-400 hover:text-slate-600 p-0.5"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
-      {/* Banner de Aviso de Notas a Corrigir */}
-      {hasMisidentifiedNotes && !fixSuccessMessage && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-50 to-indigo-50 dark:from-amber-950/40 dark:to-indigo-950/40 border border-amber-200/80 dark:border-amber-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+      {/* Hero Card com Métricas Consolidadas */}
+      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-bold text-sm">
-              <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-              <span>Reidentificação Automática de Tomadores Disponível</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Total filtrado
+            </span>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+              {filteredHistory.length} {filteredHistory.length === 1 ? 'nota' : 'notas'}
             </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300">
-              Foram detectadas notas fiscais onde o Prestador/Emissor foi marcado como cliente. O novo algoritmo semântico consegue extrair automaticamente os clientes reais (TREND COMUNICAÇÃO, ARYZONA, CLUB AGÊNCIA, FELIPE GOIS, etc.) e cadastrá-los com 1 clique.
-            </p>
+            <div className="text-[11px] text-slate-400">
+              {history.length} notas no histórico total
+            </div>
           </div>
-          <button
-            id="btn-fix-banner"
-            onClick={handleAutoFixAll}
-            disabled={fixing}
-            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shrink-0 flex items-center gap-2 transition-all shadow-md hover:shadow-indigo-500/25 cursor-pointer disabled:opacity-50"
-          >
-            <Sparkles className={`w-4 h-4 ${fixing ? 'animate-spin' : ''}`} />
-            {fixing ? 'Corrigindo Todas...' : 'Corrigir e Reidentificar Notas Agora'}
-          </button>
-        </div>
-      )}
 
-      {/* Filters Bar */}
-      <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Faturamento filtrado
+            </span>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+              {formatBRL(totalFilteredValue)}
+            </div>
+            <div className="text-[11px] text-slate-400">
+              Soma das notas exibidas
+            </div>
+          </div>
+
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Ticket médio
+            </span>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+              {formatBRL(averageFilteredValue)}
+            </div>
+            <div className="text-[11px] text-slate-400">
+              Média por nota fiscal
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Barra de Filtros Minimalista */}
+      <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               id="input-search-history"
               type="text"
-              placeholder="Pesquisar por arquivo, cliente, CNPJ ou número..."
+              placeholder="Pesquisar nota ou cliente..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500 placeholder-slate-400"
+              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-slate-400"
             />
           </div>
 
@@ -485,12 +496,12 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               id="select-history-month-filter"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-full px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-slate-400"
             >
-              <option value="ALL">📅 Todos os Meses ({allMonthlyGroups.length})</option>
+              <option value="ALL">Todos os meses ({allMonthlyGroups.length})</option>
               {allMonthlyGroups.map((group) => (
                 <option key={group.monthKey} value={group.monthKey}>
-                  {group.label} ({group.totalInvoices} {group.totalInvoices === 1 ? 'nota' : 'notas'} • {group.totalValueFormatted})
+                  {group.label} ({group.totalInvoices})
                 </option>
               ))}
             </select>
@@ -501,9 +512,9 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               id="select-history-client-filter"
               value={selectedClient}
               onChange={(e) => setSelectedClient(e.target.value)}
-              className="w-full px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-slate-400"
             >
-              <option value="ALL">Todos os Clientes</option>
+              <option value="ALL">Todos os clientes</option>
               {uniqueClients.map((client) => (
                 <option key={client} value={client}>
                   {client}
@@ -517,136 +528,98 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               id="select-history-status-filter"
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-slate-400"
             >
-              <option value="ALL">Todos os Status</option>
+              <option value="ALL">Todos os status</option>
               <option value="PROCESSADO">Processados</option>
-              <option value="REVISAR">Revisão Pendente</option>
+              <option value="REVISAR">Revisão</option>
               <option value="ERRO">Erros</option>
             </select>
           </div>
         </div>
 
-        {/* View Mode & Quick Stats Strip */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-slate-500 dark:text-slate-400 font-medium">
-              Filtro atual:
-            </span>
-            <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
-              {filteredHistory.length} {filteredHistory.length === 1 ? 'nota encontrada' : 'notas encontradas'}
-            </span>
-            <span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1 rounded-lg">
-              Total: {formatBRL(totalFilteredValue)}
-            </span>
-            {filteredHistory.length > 0 && (
-              <span className="text-slate-500 dark:text-slate-400 font-medium">
-                Ticket Médio: <strong className="text-slate-700 dark:text-slate-300">{formatBRL(averageFilteredValue)}</strong>
-              </span>
-            )}
-            {selectedMonth !== 'ALL' && (
-              <button
-                onClick={() => setSelectedMonth('ALL')}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-md hover:bg-blue-100 cursor-pointer"
-              >
-                Limpar filtro de mês <X className="w-3 h-3" />
-              </button>
-            )}
+        {/* View mode toggle */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+          <div className="text-slate-400 font-medium">
+            Mostrando {filteredHistory.length} de {history.length} notas
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-slate-400 text-[11px] font-medium">Visualização:</span>
-            <div className="p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center">
-              <button
-                type="button"
-                id="btn-view-flat"
-                onClick={() => setGroupByMonth(false)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                  !groupByMonth
-                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                }`}
-              >
-                <List className="w-3.5 h-3.5" /> Lista Plana
-              </button>
-              <button
-                type="button"
-                id="btn-view-grouped"
-                onClick={() => setGroupByMonth(true)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                  groupByMonth
-                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" /> Agrupado por Mês
-              </button>
-            </div>
+          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800">
+            <button
+              type="button"
+              id="btn-view-flat"
+              onClick={() => setGroupByMonth(false)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                !groupByMonth
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Lista contínua
+            </button>
+            <button
+              type="button"
+              id="btn-view-grouped"
+              onClick={() => setGroupByMonth(true)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                groupByMonth
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Agrupado por mês
+            </button>
           </div>
         </div>
       </div>
 
-      {/* History Content (Grouped by Month OR Flat Table) */}
+      {/* Conteúdo do Histórico */}
       {groupByMonth ? (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {filteredMonthlyGroups.length > 0 ? (
             filteredMonthlyGroups.map((group) => {
               const isCollapsed = Boolean(collapsedMonths[group.monthKey]);
               return (
                 <div
                   key={group.monthKey}
-                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden"
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden"
                 >
-                  {/* Month Header Banner */}
                   <div
                     onClick={() => toggleMonthCollapse(group.monthKey)}
-                    className="p-4 bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors"
+                    className="p-3.5 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between cursor-pointer hover:bg-slate-100/60 dark:hover:bg-slate-800/60 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-                        <CalendarDays className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <span className="font-black text-sm text-slate-900 dark:text-slate-100">
-                          {group.label}
-                        </span>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                          <span>
-                            {group.totalInvoices} {group.totalInvoices === 1 ? 'nota emitida' : 'notas emitidas'}
-                          </span>
-                          <span>•</span>
-                          <span>Ticket Médio: {group.averageValueFormatted}</span>
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-xs text-slate-900 dark:text-slate-100">
+                        {group.label}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        · {group.totalInvoices} {group.totalInvoices === 1 ? 'nota' : 'notas'}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Total do Mês</span>
-                        <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
-                          {group.totalValueFormatted}
-                        </span>
-                      </div>
-                      <div className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                        {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                      <span className="font-mono font-semibold text-xs text-slate-900 dark:text-white tabular-nums">
+                        {group.totalValueFormatted}
+                      </span>
+                      <div className="text-slate-400">
+                        {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
                       </div>
                     </div>
                   </div>
 
-                  {/* Month Table Rows */}
                   {!isCollapsed && (
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-50/50 dark:bg-slate-800/40 border-b border-slate-200/70 dark:border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
+                        <thead className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-200/60 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-[11px]">
                           <tr>
-                            <th className="py-3 px-6">Arquivo Renomeado / Original</th>
-                            <th className="py-3 px-6">Cliente (Tomador)</th>
-                            <th className="py-3 px-6">CNPJ / CPF</th>
-                            <th className="py-3 px-6">Número</th>
-                            <th className="py-3 px-6">Data</th>
-                            <th className="py-3 px-6">Valor</th>
-                            <th className="py-3 px-6">Status</th>
-                            <th className="py-3 px-6 text-right">Ações</th>
+                            <th className="py-2.5 px-4">Arquivo</th>
+                            <th className="py-2.5 px-4">Cliente</th>
+                            <th className="py-2.5 px-4">CNPJ</th>
+                            <th className="py-2.5 px-4">Número</th>
+                            <th className="py-2.5 px-4">Emissão</th>
+                            <th className="py-2.5 px-4 text-right">Valor</th>
+                            <th className="py-2.5 px-4">Status</th>
+                            <th className="py-2.5 px-4 text-right">Ações</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -659,27 +632,25 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               );
             })
           ) : (
-            <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500">
-              <History className="w-8 h-8 mx-auto mb-2 opacity-30" />
-              <p className="font-medium">Nenhum registro encontrado para os filtros selecionados.</p>
+            <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-slate-400 text-xs">
+              Nenhum registro encontrado para os filtros selecionados.
             </div>
           )}
         </div>
       ) : (
-        /* Flat Continuous Table */
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+              <thead className="bg-slate-50/75 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3.5 px-6">Arquivo Renomeado / Original</th>
-                  <th className="py-3.5 px-6">Cliente (Tomador)</th>
-                  <th className="py-3.5 px-6">CNPJ / CPF</th>
-                  <th className="py-3.5 px-6">Número</th>
-                  <th className="py-3.5 px-6">Data</th>
-                  <th className="py-3.5 px-6">Valor</th>
-                  <th className="py-3.5 px-6">Status</th>
-                  <th className="py-3.5 px-6 text-right">Ações</th>
+                  <th className="py-3 px-4">Arquivo</th>
+                  <th className="py-3 px-4">Cliente</th>
+                  <th className="py-3 px-4">CNPJ</th>
+                  <th className="py-3 px-4">Número</th>
+                  <th className="py-3 px-4">Emissão</th>
+                  <th className="py-3 px-4 text-right">Valor</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -687,9 +658,9 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                   filteredHistory.map((item) => renderInvoiceRow(item))
                 ) : (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-slate-400 dark:text-slate-500">
-                      <History className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                      <p className="font-medium">Nenhum registro no histórico de processamento.</p>
+                    <td colSpan={8} className="py-12 text-center text-slate-400">
+                      <History className="w-6 h-6 mx-auto mb-2 opacity-30" />
+                      <p className="font-medium text-xs">Nenhum registro no histórico de processamento.</p>
                     </td>
                   </tr>
                 )}
@@ -701,26 +672,23 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
 
       {/* Modal de Edição Manual de Nota */}
       {editingItem && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-5 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <Edit2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                  Editar Dados da Nota
-                </h3>
-              </div>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                Editar Dados da Nota
+              </h3>
               <button
                 onClick={() => setEditingItem(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveEdit} className="space-y-3 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Nome do Cliente / Tomador *
                 </label>
                 <input
@@ -729,12 +697,12 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                   value={editClientName}
                   onChange={(e) => setEditClientName(e.target.value)}
                   placeholder="Ex: TREND COMUNICACAO DIGITAL LTDA"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 font-semibold uppercase"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-slate-400 font-semibold uppercase"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                   CNPJ ou CPF do Cliente
                 </label>
                 <input
@@ -742,13 +710,13 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                   value={editCnpj}
                   onChange={(e) => setEditCnpj(e.target.value)}
                   placeholder="00.000.000/0000-00"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 font-mono"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-slate-400 font-mono"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Número da Nota
                   </label>
                   <input
@@ -756,11 +724,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                     value={editInvoiceNumber}
                     onChange={(e) => setEditInvoiceNumber(e.target.value)}
                     placeholder="Ex: 7"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 font-mono"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-slate-400 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Data de Emissão
                   </label>
                   <input
@@ -768,13 +736,13 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                     value={editInvoiceDate}
                     onChange={(e) => setEditInvoiceDate(e.target.value)}
                     placeholder="DD/MM/AAAA"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-slate-400"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Valor Total (R$)
                 </label>
                 <input
@@ -782,7 +750,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                   value={editInvoiceValue}
                   onChange={(e) => setEditInvoiceValue(e.target.value)}
                   placeholder="Ex: 800.00"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 font-mono"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-slate-400 font-mono"
                 />
               </div>
 
@@ -790,15 +758,15 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setEditingItem(null)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
                 >
-                  <Check className="w-4 h-4" /> Salvar Alterações
+                  Salvar
                 </button>
               </div>
             </form>

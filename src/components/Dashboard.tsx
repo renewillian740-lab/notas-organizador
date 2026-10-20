@@ -8,8 +8,6 @@ import {
   ArrowRight,
   TrendingUp,
   Building2,
-  Sparkles,
-  ShieldCheck,
   Eye,
   CheckCircle2,
   FolderOpen,
@@ -18,7 +16,6 @@ import {
   CalendarDays,
   DollarSign,
   ChevronRight,
-  BarChart3,
   Calculator,
 } from 'lucide-react';
 import { HistoryRecord } from '../types';
@@ -57,26 +54,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return recentHistory.reduce((sum, h) => sum + (h.invoiceValue || 0), 0);
   }, [recentHistory]);
 
-  const latestMonth = monthlyGroups[0] || null;
-
-  const getStatusBadge = (status: string) => {
+  const getStatusText = (status: string) => {
     switch (status) {
       case 'PROCESSADO':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
-            <CheckCircle2 className="w-3 h-3" /> Processado
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Processado
           </span>
         );
       case 'REVISAR':
       case 'PENDENTE':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300">
-            <AlertTriangle className="w-3 h-3" /> Revisão
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Revisão
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
             Erro
           </span>
         );
@@ -84,291 +82,269 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto text-slate-900 dark:text-slate-100">
-      {/* Top Banner & Quick Trigger */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 p-6 rounded-3xl text-white shadow-xl shadow-slate-900/10 border border-slate-700/60">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold mb-2 border border-blue-400/30">
-            <Sparkles className="w-3.5 h-3.5" /> Motor Semântico de Notas Fiscais
-          </div>
-          <h1 className="text-2xl font-black tracking-tight text-white">Organizador Automático de NF-e & NFS-e</h1>
-          <p className="text-sm text-slate-300 max-w-2xl">
-            Extração estruturada de dados, identificação por CNPJ + contexto, e organização inteligente em pastas por Ano / Mês / Cliente.
+    <div className="p-8 max-w-5xl mx-auto space-y-6 text-slate-900 dark:text-slate-100 animate-in fade-in duration-200">
+      {/* Header Minimalista */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Dashboard
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Visão consolidada de notas fiscais, faturamento acumulado e fechamento mensal.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+
+        {/* Ações Rápidas Discretas */}
+        <div className="flex flex-wrap items-center gap-2">
           <button
             id="btn-dash-load-samples"
             onClick={onLoadSamples}
-            className="px-4 py-2.5 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-600 transition-all flex items-center gap-2 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
+            title="Carregar notas de exemplo para teste rápido"
           >
-            <FolderOpen className="w-4 h-4 text-blue-400" /> Testar com Exemplos
+            <FolderOpen className="w-3.5 h-3.5 text-slate-500" />
+            <span>Exemplos</span>
           </button>
+
           <button
             id="btn-dash-upload-data"
             onClick={() => onNavigateTab('upload')}
-            className="px-4 py-2.5 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-600 transition-all flex items-center gap-2 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
           >
-            <FolderUp className="w-4 h-4 text-emerald-400" /> Subir Dados
+            <FolderUp className="w-3.5 h-3.5 text-slate-500" />
+            <span>Subir dados</span>
           </button>
+
           <button
             id="btn-dash-start-process"
             onClick={() => onNavigateTab('process')}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 transition-all flex items-center gap-2 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
           >
-            <FileSpreadsheet className="w-4 h-4" /> Processar Notas <ArrowRight className="w-4 h-4" />
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Processar notas</span>
           </button>
         </div>
       </div>
 
-      {/* Main Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* TOTAL DE NOTAS */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
-              Total de Notas
+      {/* Hero Card Minimalista com Métricas Consolidadas */}
+      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
+          {/* Faturamento Total */}
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Faturamento acumulado
             </span>
-            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
-              <FileText className="w-4 h-4" />
+            <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-mono tabular-nums">
+              {formatBRL(totalRevenueLifetime)}
+            </div>
+            <div className="text-[11px] text-slate-400">
+              Volume total de notas emitidas
             </div>
           </div>
-          <div className="mt-3">
-            <span className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+
+          {/* Total de Notas */}
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Total de notas
+            </span>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
               {totalNotesLifetime}
-            </span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium block mt-1">
-              Documentos analisados no sistema
-            </span>
-          </div>
-        </div>
-
-        {/* NOTAS PROCESSADAS */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
-              Notas Processadas
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
-              <FileCheck2 className="w-4 h-4" />
+            </div>
+            <div className="text-[11px] text-slate-400">
+              {processedNotesLifetime} processadas com sucesso
             </div>
           </div>
-          <div className="mt-3">
-            <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
-              {processedNotesLifetime}
-            </span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium block mt-1">
-              Cópias renomeadas e organizadas
-            </span>
-          </div>
-        </div>
 
-        {/* PENDENTES / REVISÃO */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
+          {/* Notas para Revisão */}
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
               Pendentes / Revisão
             </span>
-            <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <span className="text-3xl font-black text-amber-600 dark:text-amber-400 tracking-tight">
+            <div className={`text-2xl font-bold font-mono tabular-nums ${pendingNotesCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'}`}>
               {pendingNotesCount}
-            </span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium block mt-1">
-              Documentos que requerem atenção
-            </span>
-          </div>
-        </div>
-
-        {/* CLIENTES CADASTRADOS */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
-              Clientes Cadastrados
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 flex items-center justify-center">
-              <Users className="w-4 h-4" />
+            </div>
+            <div className="text-[11px] text-slate-400">
+              {pendingNotesCount > 0 ? 'Requerem verificação manual' : 'Nenhuma pendência pendente'}
             </div>
           </div>
-          <div className="mt-3">
-            <span className="text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tight">
+
+          {/* Clientes Cadastrados */}
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Clientes ativos
+            </span>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
               {clientsCount}
-            </span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium block mt-1">
-              CNPJs vinculados a nomes personalizados
-            </span>
+            </div>
+            <div className="text-[11px] text-slate-400">
+              CNPJs vinculados no sistema
+            </div>
           </div>
         </div>
       </div>
 
-      {/* SEÇÃO DE ORGANIZAÇÃO & FECHAMENTO MENSAL */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Seção Fechamento Mensal */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <CalendarDays className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-                Organização & Fechamento Mensal
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Controle de emissão e faturamento total por mês de competência
+            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+              Fechamento Mensal
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Faturamento e volume emitido por competência
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               id="btn-dash-open-taxes-tab"
               onClick={() => onNavigateTab('taxes')}
-              className="text-xs font-bold text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 flex items-center gap-1.5 cursor-pointer bg-amber-500/10 dark:bg-amber-950/40 px-3 py-1.5 rounded-xl border border-amber-500/20 hover:border-amber-500/40 transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 transition-colors cursor-pointer"
             >
-              <Calculator className="w-3.5 h-3.5 text-amber-500" />
-              <span>Calcular Impostos</span>
+              <Calculator className="w-3.5 h-3.5 text-slate-500" />
+              <span>Calcular impostos</span>
             </button>
+
             <button
               id="btn-dash-open-monthly-tab"
               onClick={() => onNavigateTab('monthly')}
-              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 cursor-pointer"
+              className="text-xs font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 inline-flex items-center gap-1 transition-colors cursor-pointer"
             >
-              Abrir Visão Mensal Completa <ArrowRight className="w-3.5 h-3.5" />
+              <span>Ver todos</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
         {monthlyGroups.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {monthlyGroups.slice(0, 3).map((group, idx) => (
               <div
                 key={group.monthKey}
                 onClick={() => onNavigateTab('monthly')}
-                className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer space-y-3 group"
+                className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer group"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                    <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
-                      {group.label}
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-xs text-slate-900 dark:text-slate-100">
+                    {group.label}
+                  </span>
                   {idx === 0 && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                      Mês Mais Recente
+                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                      Mais recente
                     </span>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-baseline justify-between pt-1">
                   <div>
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                      Notas Emitidas
-                    </span>
-                    <span className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
-                      {group.totalInvoices}
+                    <span className="text-[11px] text-slate-400 block">Faturamento</span>
+                    <span className="text-base font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+                      {group.totalValueFormatted}
                     </span>
                   </div>
-
-                  <div>
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                      Faturamento Total
-                    </span>
-                    <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
-                      {group.totalValueFormatted}
+                  <div className="text-right">
+                    <span className="text-[11px] text-slate-400 block">Notas</span>
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 font-mono tabular-nums">
+                      {group.totalInvoices}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span>Ticket Médio: <strong className="text-slate-700 dark:text-slate-300">{group.averageValueFormatted}</strong></span>
-                  <span className="text-blue-600 dark:text-blue-400 font-bold group-hover:translate-x-1 transition-transform flex items-center">
-                    Ver detalhes <ChevronRight className="w-3.5 h-3.5" />
+                <div className="flex items-center justify-between text-[11px] text-slate-400 pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/80">
+                  <span>Ticket médio: <strong className="font-mono text-slate-600 dark:text-slate-400 font-medium">{group.averageValueFormatted}</strong></span>
+                  <span className="group-hover:translate-x-0.5 transition-transform text-slate-500">
+                    <ChevronRight className="w-3 h-3" />
                   </span>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 text-center text-slate-400 text-xs">
-            Nenhuma competência mensal identificada ainda. Processe notas fiscais para gerar o fechamento automático.
+          <div className="p-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-center text-slate-400 text-xs">
+            Nenhuma competência mensal identificada. Processe notas para visualizar o fechamento automático.
           </div>
         )}
       </div>
 
-      {/* "Últimos arquivos processados" Table */}
-      <div className="space-y-4">
+      {/* Tabela de Últimos Arquivos Processados */}
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
               Últimos Arquivos Processados
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Histórico das notas fiscais mais recentes organizadas pelo sistema
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Notas fiscais recentemente registradas no sistema
             </p>
           </div>
+
           {recentHistory.length > 0 && (
             <button
               onClick={() => onNavigateTab('history')}
-              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 cursor-pointer"
+              className="text-xs font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 inline-flex items-center gap-1 transition-colors cursor-pointer"
             >
-              Ver todos ({recentHistory.length}) <ArrowRight className="w-3.5 h-3.5" />
+              <span>Ver todas ({recentHistory.length})</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+              <thead className="bg-slate-50/75 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3.5 px-6">Nome do Arquivo</th>
-                  <th className="py-3.5 px-6">Cliente</th>
-                  <th className="py-3.5 px-6">Valor</th>
-                  <th className="py-3.5 px-6">Data Emissão</th>
-                  <th className="py-3.5 px-6">Status</th>
-                  <th className="py-3.5 px-6 text-right">Ação</th>
+                  <th className="py-3 px-4">Arquivo</th>
+                  <th className="py-3 px-4">Cliente</th>
+                  <th className="py-3 px-4 text-right">Valor</th>
+                  <th className="py-3 px-4">Emissão</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Ação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {recentHistory.length > 0 ? (
                   recentHistory.slice(0, 6).map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3.5 px-6">
-                        <div className="max-w-xs truncate">
-                          <span className="font-bold text-slate-900 dark:text-slate-100 block truncate" title={item.generatedFileName}>
-                            {item.generatedFileName}
-                          </span>
-                          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono block truncate" title={item.originalFileName}>
-                            Original: {item.originalFileName}
-                          </span>
-                        </div>
+                    <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors">
+                      <td className="py-3 px-4 max-w-xs">
+                        <span className="font-medium text-slate-900 dark:text-slate-100 block truncate" title={item.generatedFileName}>
+                          {item.generatedFileName}
+                        </span>
+                        <span className="text-[11px] text-slate-400 block truncate" title={item.originalFileName}>
+                          {item.originalFileName}
+                        </span>
                       </td>
-                      <td className="py-3.5 px-6">
-                        <span className="font-bold text-slate-800 dark:text-slate-200">{item.clientName}</span>
-                        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono block">{item.cnpj}</span>
+                      <td className="py-3 px-4">
+                        <span className="font-medium text-slate-800 dark:text-slate-200 block truncate max-w-[200px]">
+                          {item.clientName}
+                        </span>
+                        <span className="text-[11px] text-slate-400 font-mono block">{item.cnpj}</span>
                       </td>
-                      <td className="py-3.5 px-6 font-bold text-emerald-700 dark:text-emerald-400">
+                      <td className="py-3 px-4 text-right font-mono font-medium text-slate-900 dark:text-slate-100 tabular-nums">
                         {item.invoiceValueFormatted}
                       </td>
-                      <td className="py-3.5 px-6 text-slate-600 dark:text-slate-400">{item.invoiceDate}</td>
-                      <td className="py-3.5 px-6">{getStatusBadge(item.status)}</td>
-                      <td className="py-3.5 px-6 text-right">
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400 tabular-nums font-mono text-[11px]">
+                        {item.invoiceDate}
+                      </td>
+                      <td className="py-3 px-4">
+                        {getStatusText(item.status)}
+                      </td>
+                      <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             id={`btn-dash-view-pdf-${item.id}`}
                             onClick={() => setSelectedPdfToView(item)}
-                            className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors inline-flex items-center gap-1 font-semibold text-[11px] cursor-pointer"
-                            title="Visualizar PDF original no Vercel Blob"
+                            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                            title="Visualizar PDF"
                           >
-                            <FileText className="w-3.5 h-3.5" /> PDF
+                            <FileText className="w-3 h-3" /> PDF
                           </button>
                           <button
                             id={`btn-dash-view-detail-${item.id}`}
                             onClick={() => onViewInvoiceDetails(item)}
-                            className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors inline-flex items-center gap-1 font-semibold text-[11px] cursor-pointer"
+                            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
                           >
-                            <Eye className="w-3.5 h-3.5" /> Detalhes
+                            <Eye className="w-3 h-3" /> Detalhes
                           </button>
                         </div>
                       </td>
@@ -376,11 +352,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400 dark:text-slate-500">
-                      <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                      <p className="font-medium">Nenhum arquivo processado ainda.</p>
-                      <p className="text-[11px] mt-1">
-                        Selecione uma pasta com notas fiscais na aba &quot;Processar notas&quot; ou clique no botão de exemplos acima.
+                    <td colSpan={6} className="py-12 text-center text-slate-400">
+                      <FileText className="w-6 h-6 mx-auto mb-2 opacity-30" />
+                      <p className="font-medium text-xs">Nenhum arquivo processado ainda.</p>
+                      <p className="text-[11px] mt-0.5">
+                        Utilize a aba &quot;Processar notas&quot; ou clique em &quot;Exemplos&quot; para testar.
                       </p>
                     </td>
                   </tr>
