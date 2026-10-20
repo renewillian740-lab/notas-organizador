@@ -360,14 +360,18 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
         onDrop={handleDrop}
         className={`p-6 rounded-2xl border transition-colors ${
           isDragOver
-            ? 'border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-900'
+            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/40'
             : selectedFiles.length > 0
-            ? 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900'
-            : 'border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-400 dark:hover:border-slate-600'
+            ? 'border-emerald-200/90 dark:border-emerald-800/80 bg-gradient-to-br from-emerald-50/30 to-white dark:to-slate-900 shadow-xs'
+            : 'border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-400 dark:hover:border-blue-600'
         }`}
       >
         <div className="flex flex-col items-center text-center max-w-md mx-auto space-y-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+            selectedFiles.length > 0
+              ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
+              : 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400'
+          }`}>
             {selectedFiles.length > 0 ? (
               <FileCheck className="w-5 h-5" />
             ) : (
@@ -392,7 +396,7 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
               type="button"
               disabled={isProcessing}
               onClick={() => folderInputRef.current?.click()}
-              className="px-3.5 py-1.5 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 disabled:opacity-40 text-xs font-semibold transition-opacity flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-xs shadow-blue-500/25 disabled:opacity-40 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <FolderOpen className="w-3.5 h-3.5" />
               <span>Selecionar pasta</span>
@@ -405,7 +409,7 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
               onClick={() => fileInputRef.current?.click()}
               className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <FileText className="w-3.5 h-3.5 text-slate-500" />
+              <FileText className="w-3.5 h-3.5 text-slate-400" />
               <span>Arquivos soltos</span>
             </button>
           </div>
@@ -421,7 +425,7 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
               checked={autoRegisterClients}
               onChange={(e) => setAutoRegisterClients(e.target.checked)}
               disabled={isProcessing}
-              className="w-4 h-4 text-slate-900 rounded border-slate-300 dark:border-slate-700 focus:ring-0 cursor-pointer"
+              className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-700 focus:ring-0 cursor-pointer"
             />
             <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">
               Cadastrar automaticamente novos clientes identificados
@@ -433,7 +437,7 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
             type="button"
             onClick={handleStartIngestion}
             disabled={isProcessing || items.length === 0}
-            className="px-4 py-2 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 disabled:opacity-40 text-xs font-semibold transition-opacity flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-xs shadow-emerald-500/25 disabled:opacity-40 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
           >
             {isProcessing ? (
               <>
@@ -450,16 +454,16 @@ export const UploadDataPage: React.FC<UploadDataPageProps> = ({
         </div>
       )}
 
-      {/* Progresso Minimalista */}
+      {/* Progresso com Gradiente */}
       {isProcessing && (
         <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
           <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
             <span>Progresso da importação</span>
-            <span className="font-mono">{Math.round((currentIndex / items.length) * 100)}%</span>
+            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{Math.round((currentIndex / items.length) * 100)}%</span>
           </div>
-          <div className="w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
             <div
-              className="h-full bg-slate-900 dark:bg-white transition-all duration-200 rounded-full"
+              className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-200 rounded-full"
               style={{ width: `${(currentIndex / items.length) * 100}%` }}
             />
           </div>

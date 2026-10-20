@@ -492,36 +492,36 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
     switch (status) {
       case 'PROCESSADO':
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             Salvo
           </span>
         );
       case 'IDENTIFICADO':
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/80 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
             Pronto
           </span>
         );
       case 'REVISAR':
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
             Revisar
           </span>
         );
       case 'ERRO':
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
             Erro
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium text-slate-500 bg-slate-100 dark:bg-slate-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
             Aguardando
           </span>
         );
@@ -565,13 +565,13 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
             onClick={handleLoadSamples}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5 text-slate-500" />
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
             <span>Exemplos de teste</span>
           </button>
         </div>
       </div>
 
-      {/* Fluxo de 3 Passos Minimalista */}
+      {/* Fluxo de 3 Passos com Cores Vivas e Indicadores */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Passo 1: Selecionar */}
         <div
@@ -582,17 +582,21 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
           }}
           onDragLeave={() => setIsDragOver(false)}
           onDrop={handleDrop}
-          className={`p-4 rounded-2xl border transition-colors cursor-pointer flex flex-col justify-between ${
+          className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
             isDragOver
-              ? 'border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-900'
+              ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/40'
+              : sourceFiles.length > 0
+              ? 'border-blue-200 dark:border-blue-900/60 bg-gradient-to-br from-blue-50/40 to-white dark:to-slate-900 shadow-xs'
               : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
           }`}
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
               Passo 1
             </span>
-            <FolderOpen className="w-4 h-4 text-slate-400" />
+            <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+              <FolderOpen className="w-3.5 h-3.5" />
+            </div>
           </div>
 
           <div>
@@ -608,12 +612,18 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
         </div>
 
         {/* Passo 2: Analisar */}
-        <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+        <div className={`p-4 rounded-2xl border flex flex-col justify-between transition-all ${
+          invoiceItems.length > 0 && processedSuccessCount < invoiceItems.length
+            ? 'border-indigo-200 dark:border-indigo-900/60 bg-gradient-to-br from-indigo-50/30 to-white dark:to-slate-900 shadow-xs'
+            : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900'
+        }`}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">
               Passo 2
             </span>
-            <Play className="w-4 h-4 text-slate-400" />
+            <div className="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <Play className="w-3.5 h-3.5" />
+            </div>
           </div>
 
           <div>
@@ -621,7 +631,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
               id="btn-analyze-invoices"
               disabled={invoiceItems.length === 0 || isAnalyzing}
               onClick={handleAnalyzeNotes}
-              className="w-full py-2 px-3 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 disabled:opacity-30 text-xs font-semibold transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-xs shadow-blue-500/25 disabled:opacity-30 disabled:bg-slate-700 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               {isAnalyzing ? (
                 <>
@@ -639,12 +649,18 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
         </div>
 
         {/* Passo 3: Organizar */}
-        <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between">
+        <div className={`p-4 rounded-2xl border flex flex-col justify-between transition-all ${
+          processedSuccessCount > 0
+            ? 'border-emerald-200 dark:border-emerald-900/60 bg-gradient-to-br from-emerald-50/30 to-white dark:to-slate-900 shadow-xs'
+            : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900'
+        }`}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
               Passo 3
             </span>
-            <Archive className="w-4 h-4 text-slate-400" />
+            <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <Archive className="w-3.5 h-3.5" />
+            </div>
           </div>
 
           <div>
@@ -652,7 +668,7 @@ export const ProcessInvoices: React.FC<ProcessInvoicesProps> = ({
               id="btn-execute-organize"
               disabled={processedSuccessCount === 0 || isExporting || isAnalyzing}
               onClick={handleExecuteOrganization}
-              className="w-full py-2 px-3 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 disabled:opacity-30 text-xs font-semibold transition-opacity flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-xs shadow-emerald-500/25 disabled:opacity-30 disabled:bg-slate-700 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               {isExporting ? (
                 <>

@@ -168,7 +168,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             id="btn-save-settings-top"
             type="button"
             onClick={handleSave}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs shadow-blue-500/25 transition-all cursor-pointer"
           >
             <Save className="w-3.5 h-3.5" />
             <span>Salvar alterações</span>
@@ -177,9 +177,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       </div>
 
       {saveSuccess && (
-        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center gap-2 text-xs text-slate-800 dark:text-slate-200">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>Configurações salvas e aplicadas com sucesso!</span>
+        <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span className="font-medium">Configurações salvas e aplicadas com sucesso!</span>
         </div>
       )}
 
@@ -187,12 +187,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         <div
           className={`p-3 rounded-xl border text-xs flex items-center gap-2 ${
             importMessage.type === 'success'
-              ? 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
               : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
           }`}
         >
           {importMessage.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           ) : (
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           )}
@@ -217,51 +217,51 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               type="button"
               id="theme-select-light"
               onClick={() => handleThemeChange('light')}
-              className={`p-3 rounded-xl border text-left transition-colors cursor-pointer flex items-center justify-between ${
+              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                 theme === 'light'
-                  ? 'border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800'
+                  ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 shadow-xs'
                   : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <Sun className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                <Sun className="w-4 h-4 text-amber-500" />
                 <span className="text-xs font-semibold text-slate-900 dark:text-white">Claro</span>
               </div>
-              {theme === 'light' && <span className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white"></span>}
+              {theme === 'light' && <span className="w-2 h-2 rounded-full bg-blue-600"></span>}
             </button>
 
             <button
               type="button"
               id="theme-select-dark"
               onClick={() => handleThemeChange('dark')}
-              className={`p-3 rounded-xl border text-left transition-colors cursor-pointer flex items-center justify-between ${
+              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                 theme === 'dark'
-                  ? 'border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800'
+                  ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 shadow-xs'
                   : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <Moon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                <Moon className="w-4 h-4 text-indigo-400" />
                 <span className="text-xs font-semibold text-slate-900 dark:text-white">Escuro</span>
               </div>
-              {theme === 'dark' && <span className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white"></span>}
+              {theme === 'dark' && <span className="w-2 h-2 rounded-full bg-blue-600"></span>}
             </button>
 
             <button
               type="button"
               id="theme-select-system"
               onClick={() => handleThemeChange('system')}
-              className={`p-3 rounded-xl border text-left transition-colors cursor-pointer flex items-center justify-between ${
+              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                 theme === 'system'
-                  ? 'border-slate-900 dark:border-white bg-slate-50 dark:bg-slate-800'
+                  ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 shadow-xs'
                   : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <Monitor className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                <Monitor className="w-4 h-4 text-blue-500" />
                 <span className="text-xs font-semibold text-slate-900 dark:text-white">Automático</span>
               </div>
-              {theme === 'system' && <span className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white"></span>}
+              {theme === 'system' && <span className="w-2 h-2 rounded-full bg-blue-600"></span>}
             </button>
           </div>
         </section>
@@ -508,7 +508,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           <button
             id="btn-save-settings"
             type="submit"
-            className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+            className="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs shadow-blue-500/25 transition-all cursor-pointer"
           >
             Salvar configurações
           </button>

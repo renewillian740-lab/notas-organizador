@@ -12,6 +12,7 @@ import {
   FileText,
   ChevronRight,
   ArrowUpRight,
+  Calculator,
 } from 'lucide-react';
 import { HistoryRecord } from '../types';
 import { groupHistoryByMonth, formatBRL } from '../utils/monthUtils';
@@ -258,17 +259,17 @@ Previsão de Vencimento: ${estimatedDueDate}`;
             </span>
           </div>
 
-          {/* Atalhos limpos em pílula */}
+          {/* Atalhos com cor ativa */}
           <div className="flex items-center gap-1">
             {[4, 6, 9, 13.3, 15.5].map((preset) => (
               <button
                 key={preset}
                 type="button"
                 onClick={() => setTaxRate(preset)}
-                className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer ${
                   Math.abs(taxRate - preset) < 0.1
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    ? 'bg-indigo-600 text-white font-bold shadow-xs shadow-indigo-500/30'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
                 }`}
               >
                 {preset}%
@@ -276,7 +277,7 @@ Previsão de Vencimento: ${estimatedDueDate}`;
             ))}
           </div>
 
-          {/* Salvar padrão discreto */}
+          {/* Salvar padrão */}
           <button
             type="button"
             onClick={handleSaveAsDefault}
@@ -284,57 +285,106 @@ Previsão de Vencimento: ${estimatedDueDate}`;
             className="text-xs text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 ml-1 p-1 rounded-md transition-colors cursor-pointer"
           >
             {savedDefaultToast ? (
-              <span className="text-emerald-600 text-[11px] font-bold">Salvo!</span>
+              <span className="text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">Salvo!</span>
             ) : (
-              <BookmarkCheck className="w-3.5 h-3.5" />
+              <BookmarkCheck className="w-3.5 h-3.5 text-indigo-500" />
             )}
           </button>
         </div>
       </div>
 
-      {/* Hero Card Minimalista com os Valores Essenciais */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800">
-          {/* 1. Destaque Principal: Imposto Estimado */}
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Imposto estimado a pagar
+      {/* Cards de Métricas com Cores Vivas e Semânticas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* 1. Destaque Principal: Imposto Estimado (Âmbar/Laranja) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-white dark:to-slate-900 border border-amber-300/80 dark:border-amber-800/70 shadow-xs space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-amber-800 dark:text-amber-300 uppercase tracking-wider">
+              Imposto a Pagar
             </span>
-            <div className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-              {formatBRL(metrics.estimatedTax)}
-            </div>
-            <div className="text-[11px] text-slate-400 pt-0.5">
-              Alíquota de <strong>{taxRate.toFixed(1).replace('.', ',')}%</strong> no período
+            <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Calculator className="w-4 h-4" />
             </div>
           </div>
+          <div className="text-3xl font-extrabold tracking-tight text-amber-600 dark:text-amber-400 font-mono tabular-nums">
+            {formatBRL(metrics.estimatedTax)}
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-amber-700/80 dark:text-amber-400/80 pt-1 border-t border-amber-200/60 dark:border-amber-800/50">
+            <span>Alíquota: <strong>{taxRate.toFixed(1).replace('.', ',')}%</strong></span>
+            <span>Vencimento: {estimatedDueDate}</span>
+          </div>
+        </div>
 
-          {/* 2. Faturamento Bruto */}
-          <div className="pt-4 md:pt-0 md:pl-6 space-y-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Faturamento em notas ({metrics.totalNotes} {metrics.totalNotes === 1 ? 'nota' : 'notas'})
+        {/* 2. Faturamento Bruto (Azul/Índigo) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-white dark:to-slate-900 border border-blue-200/80 dark:border-blue-900/70 shadow-xs space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-blue-800 dark:text-blue-300 uppercase tracking-wider">
+              Faturamento Bruto
             </span>
-            <div className="text-2xl font-bold text-slate-800 dark:text-slate-200">
-              {formatBRL(metrics.totalRevenue)}
-            </div>
-            <div className="text-[11px] text-slate-400 pt-0.5">
-              Competência: {periodLabel}
+            <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+              <DollarSign className="w-4 h-4" />
             </div>
           </div>
+          <div className="text-2xl font-extrabold text-blue-700 dark:text-blue-300 font-mono tabular-nums">
+            {formatBRL(metrics.totalRevenue)}
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-blue-700/80 dark:text-blue-400/80 pt-1 border-t border-blue-200/60 dark:border-blue-900/50">
+            <span>Volume: <strong>{metrics.totalNotes} {metrics.totalNotes === 1 ? 'nota' : 'notas'}</strong></span>
+            <span className="truncate max-w-[140px]">{periodLabel}</span>
+          </div>
+        </div>
 
-          {/* 3. Líquido que sobra no caixa */}
-          <div className="pt-4 md:pt-0 md:pl-6 space-y-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Sobra líquida aproximada
+        {/* 3. Líquido que sobra no caixa (Esmeralda) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-white dark:to-slate-900 border border-emerald-200/80 dark:border-emerald-800/70 shadow-xs space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+              Sobra Líquida
             </span>
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-              {formatBRL(metrics.netRevenue)}
+            <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4" />
             </div>
-            <div className="text-[11px] text-slate-400 pt-0.5">
-              Vencimento previsto: {estimatedDueDate}
-            </div>
+          </div>
+          <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+            {formatBRL(metrics.netRevenue)}
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-emerald-700/80 dark:text-emerald-400/80 pt-1 border-t border-emerald-200/60 dark:border-emerald-800/50">
+            <span>Retenção líquida: <strong>{(100 - taxRate).toFixed(1).replace('.', ',')}%</strong></span>
+            <span>No caixa</span>
           </div>
         </div>
       </div>
+
+      {/* Barra de Proporção Visual (Imposto x Líquido) */}
+      {metrics.totalRevenue > 0 && (
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-2">
+          <div className="flex items-center justify-between text-xs font-medium">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+              <span className="text-slate-700 dark:text-slate-300">
+                Imposto a recolher: <strong className="text-amber-600 dark:text-amber-400 font-mono">{formatBRL(metrics.estimatedTax)}</strong> ({taxRate.toFixed(1)}%)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+              <span className="text-slate-700 dark:text-slate-300">
+                Líquido empresa: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{formatBRL(metrics.netRevenue)}</strong> ({(100 - taxRate).toFixed(1)}%)
+              </span>
+            </div>
+          </div>
+
+          <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex shadow-inner">
+            <div
+              className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-300"
+              style={{ width: `${Math.min(Math.max(taxRate, 2), 98)}%` }}
+              title={`Imposto: ${taxRate.toFixed(1)}%`}
+            />
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300"
+              style={{ width: `${100 - Math.min(Math.max(taxRate, 2), 98)}%` }}
+              title={`Líquido: ${(100 - taxRate).toFixed(1)}%`}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Visualização de Dados (Segmented Tabs Minimalistas) */}
       <div className="space-y-3">
@@ -344,9 +394,9 @@ Previsão de Vencimento: ${estimatedDueDate}`;
             <button
               type="button"
               onClick={() => setViewTab('invoices')}
-              className={`pb-2 -mb-2 border-b-2 transition-colors cursor-pointer ${
+              className={`pb-2 -mb-2 border-b-2 transition-all cursor-pointer ${
                 viewTab === 'invoices'
-                  ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                  ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
                   : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
               }`}
             >
@@ -356,9 +406,9 @@ Previsão de Vencimento: ${estimatedDueDate}`;
             <button
               type="button"
               onClick={() => setViewTab('monthly')}
-              className={`pb-2 -mb-2 border-b-2 transition-colors cursor-pointer ${
+              className={`pb-2 -mb-2 border-b-2 transition-all cursor-pointer ${
                 viewTab === 'monthly'
-                  ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white'
+                  ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
                   : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
               }`}
             >
@@ -414,13 +464,13 @@ Previsão de Vencimento: ${estimatedDueDate}`;
                               {item.clientName || 'Cliente não identificado'}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-right font-medium text-slate-900 dark:text-slate-100">
+                          <td className="px-4 py-3 text-right font-medium text-slate-900 dark:text-slate-100 font-mono">
                             {formatBRL(val)}
                           </td>
-                          <td className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">
+                          <td className="px-4 py-3 text-right font-bold text-amber-600 dark:text-amber-400 font-mono">
                             {formatBRL(noteTax)}
                           </td>
-                          <td className="px-4 py-3 text-right text-emerald-600 dark:text-emerald-400 font-medium">
+                          <td className="px-4 py-3 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                             {formatBRL(noteNet)}
                           </td>
                           <td className="px-4 py-3 text-center">
@@ -457,8 +507,8 @@ Previsão de Vencimento: ${estimatedDueDate}`;
                       <th className="px-4 py-3">Mês</th>
                       <th className="px-4 py-3 text-center">Notas</th>
                       <th className="px-4 py-3 text-right">Faturamento</th>
-                      <th className="px-4 py-3 text-right">Imposto Estimado ({taxRate}%)</th>
-                      <th className="px-4 py-3 text-right">Líquido</th>
+                      <th className="px-4 py-3 text-right text-amber-600 dark:text-amber-400">Imposto ({taxRate}%)</th>
+                      <th className="px-4 py-3 text-right text-emerald-600 dark:text-emerald-400">Líquido</th>
                       <th className="px-4 py-3 text-center">Ação</th>
                     </tr>
                   </thead>
@@ -473,23 +523,23 @@ Previsão de Vencimento: ${estimatedDueDate}`;
                           key={group.monthKey}
                           className={`transition-colors ${
                             isSelected
-                              ? 'bg-slate-50 dark:bg-slate-800/50'
+                              ? 'bg-blue-50/50 dark:bg-blue-950/20'
                               : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30'
                           }`}
                         >
                           <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
                             {group.label}
                           </td>
-                          <td className="px-4 py-3 text-center text-slate-500">
+                          <td className="px-4 py-3 text-center text-slate-500 font-mono">
                             {group.totalInvoices}
                           </td>
-                          <td className="px-4 py-3 text-right font-medium text-slate-900 dark:text-slate-100">
+                          <td className="px-4 py-3 text-right font-medium text-slate-900 dark:text-slate-100 font-mono">
                             {group.totalValueFormatted}
                           </td>
-                          <td className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-300">
+                          <td className="px-4 py-3 text-right font-bold text-amber-600 dark:text-amber-400 font-mono">
                             {formatBRL(mTax)}
                           </td>
-                          <td className="px-4 py-3 text-right text-emerald-600 dark:text-emerald-400 font-medium">
+                          <td className="px-4 py-3 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                             {formatBRL(mNet)}
                           </td>
                           <td className="px-4 py-3 text-center">

@@ -24,6 +24,7 @@ import {
   formatBRL,
 } from '../utils/monthUtils';
 import { PdfViewerModal } from './PdfViewerModal';
+import { db } from '../services/db';
 
 interface MonthlyOverviewPageProps {
   history: HistoryRecord[];
@@ -88,7 +89,7 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
     switch (status) {
       case 'PROCESSADO':
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             Processado
           </span>
@@ -96,14 +97,14 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
       case 'REVISAR':
       case 'PENDENTE':
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
             Revisão
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
             Erro
           </span>
@@ -180,14 +181,14 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
                     key={group.monthKey}
                     id={`btn-month-tab-${group.monthKey}`}
                     onClick={() => setSelectedMonthKey(group.monthKey)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
                       isSelected
-                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold'
+                        ? 'bg-blue-600 text-white font-bold shadow-xs shadow-blue-500/30'
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     <span>{group.label}</span>
-                    <span className="ml-1.5 opacity-60 font-mono text-[11px]">
+                    <span className="ml-1.5 opacity-80 font-mono text-[11px]">
                       ({group.totalInvoices})
                     </span>
                   </button>
@@ -202,15 +203,20 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
 
           {activeGroup && (
             <>
-              {/* Hero Card Minimalista com os Valores do Mês */}
+              {/* Hero Card com Métricas e Ícones Coloridos */}
               <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
-                  {/* Faturamento */}
-                  <div className="space-y-1">
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                      Faturamento de {activeGroup.shortLabel}
-                    </span>
-                    <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-mono tabular-nums">
+                  {/* Faturamento (Esmeralda) */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                        Faturamento de {activeGroup.shortLabel}
+                      </span>
+                      <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                        <DollarSign className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="text-2xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
                       {activeGroup.totalValueFormatted}
                     </div>
                     <div className="text-[11px] text-slate-400">
@@ -218,12 +224,17 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
                     </div>
                   </div>
 
-                  {/* Notas Emitidas */}
-                  <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                      Notas emitidas
-                    </span>
-                    <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+                  {/* Notas Emitidas (Azul) */}
+                  <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-blue-800 dark:text-blue-300">
+                        Notas emitidas
+                      </span>
+                      <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                        <FileText className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="text-2xl font-extrabold text-blue-700 dark:text-blue-300 font-mono tabular-nums">
                       {activeGroup.totalInvoices}
                     </div>
                     <div className="text-[11px] text-slate-400">
@@ -231,12 +242,17 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
                     </div>
                   </div>
 
-                  {/* Ticket Médio */}
-                  <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                      Ticket médio
-                    </span>
-                    <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+                  {/* Ticket Médio (Roxo) */}
+                  <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-purple-800 dark:text-purple-300">
+                        Ticket médio
+                      </span>
+                      <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="text-2xl font-extrabold text-purple-700 dark:text-purple-300 font-mono tabular-nums">
                       {activeGroup.averageValueFormatted}
                     </div>
                     <div className="text-[11px] text-slate-400">
@@ -244,12 +260,17 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
                     </div>
                   </div>
 
-                  {/* Tomadores / Clientes */}
-                  <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                      Clientes atendidos
-                    </span>
-                    <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+                  {/* Tomadores / Clientes (Índigo) */}
+                  <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-indigo-800 dark:text-indigo-300">
+                        Clientes atendidos
+                      </span>
+                      <div className="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                        <Users className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="text-2xl font-extrabold text-indigo-700 dark:text-indigo-300 font-mono tabular-nums">
                       {activeGroup.topClients.length}
                     </div>
                     <div className="text-[11px] text-slate-400">
@@ -258,6 +279,44 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Banner de Imposto Estimado do Mês (Âmbar) */}
+              {(() => {
+                const defaultRate = db.getSettings().defaultTaxRate ?? 6.0;
+                const estTaxMonth = activeGroup.totalValue * (defaultRate / 100);
+                const estNetMonth = activeGroup.totalValue - estTaxMonth;
+                return (
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-white dark:to-slate-900 border border-amber-300/80 dark:border-amber-800/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                        <Calculator className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wide">
+                            Previsão de Impostos ({activeGroup.label})
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-semibold font-mono">
+                            {defaultRate}%
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-0.5">
+                          Imposto estimado: <strong className="text-amber-700 dark:text-amber-300 font-mono">{formatBRL(estTaxMonth)}</strong> | Sobra líquida aproximada: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{formatBRL(estNetMonth)}</strong>
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onNavigateTab('taxes')}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white transition-colors cursor-pointer shadow-xs shrink-0 flex items-center gap-1.5"
+                    >
+                      <Calculator className="w-3.5 h-3.5" />
+                      <span>Simular completo</span>
+                    </button>
+                  </div>
+                );
+              })()}
 
               {/* Comparativo Mês a Mês */}
               {monthlyGroups.length > 1 && (
@@ -293,12 +352,12 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
                           onClick={() => setSelectedMonthKey(group.monthKey)}
                           className={`p-2.5 rounded-xl cursor-pointer transition-colors ${
                             isCurrentActive
-                              ? 'bg-slate-100/90 dark:bg-slate-800/80'
+                              ? 'bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/60'
                               : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
                           }`}
                         >
                           <div className="flex items-center justify-between text-xs mb-1.5">
-                            <span className={`font-medium ${isCurrentActive ? 'text-slate-900 dark:text-white font-semibold' : 'text-slate-600 dark:text-slate-400'}`}>
+                            <span className={`font-medium ${isCurrentActive ? 'text-blue-900 dark:text-blue-200 font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
                               {group.label}
                             </span>
                             <div className="flex items-center gap-3 font-mono text-xs tabular-nums">
@@ -314,7 +373,7 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
                           <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all duration-300 ${
-                                isCurrentActive ? 'bg-slate-900 dark:bg-white' : 'bg-slate-300 dark:bg-slate-700'
+                                isCurrentActive ? 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-xs' : 'bg-slate-300 dark:bg-slate-700'
                               }`}
                               style={{ width: `${percentage}%` }}
                             />
@@ -423,17 +482,17 @@ export const MonthlyOverviewPage: React.FC<MonthlyOverviewPageProps> = ({
                                   <button
                                     id={`btn-month-view-pdf-${item.id}`}
                                     onClick={() => setSelectedPdfToView(item)}
-                                    className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                    className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
                                     title="Visualizar PDF"
                                   >
-                                    <FileText className="w-3 h-3" /> PDF
+                                    <FileText className="w-3 h-3 text-rose-500" /> PDF
                                   </button>
                                   <button
                                     id={`btn-month-view-detail-${item.id}`}
                                     onClick={() => onViewInvoiceDetails(item)}
-                                    className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                    className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
                                   >
-                                    <Eye className="w-3 h-3" /> Detalhes
+                                    <Eye className="w-3 h-3 text-blue-500" /> Detalhes
                                   </button>
                                 </div>
                               </td>

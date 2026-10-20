@@ -58,7 +58,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     switch (status) {
       case 'PROCESSADO':
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             Processado
           </span>
@@ -66,14 +66,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
       case 'REVISAR':
       case 'PENDENTE':
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
             Revisão
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
             Erro
           </span>
@@ -118,7 +118,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <button
             id="btn-dash-start-process"
             onClick={() => onNavigateTab('process')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm shadow-blue-500/25 transition-all cursor-pointer"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
             <span>Processar notas</span>
@@ -126,15 +126,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Hero Card Minimalista com Métricas Consolidadas */}
+      {/* Hero Card com Métricas e Ícones Coloridos */}
       <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
-          {/* Faturamento Total */}
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Faturamento acumulado
-            </span>
-            <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-mono tabular-nums">
+          {/* Faturamento Total (Verde / Esmeralda) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                Faturamento acumulado
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <DollarSign className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-2xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
               {formatBRL(totalRevenueLifetime)}
             </div>
             <div className="text-[11px] text-slate-400">
@@ -142,12 +147,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          {/* Total de Notas */}
-          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Total de notas
-            </span>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+          {/* Total de Notas (Azul) */}
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-blue-800 dark:text-blue-300">
+                Total de notas
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <FileText className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-2xl font-extrabold text-blue-700 dark:text-blue-300 font-mono tabular-nums">
               {totalNotesLifetime}
             </div>
             <div className="text-[11px] text-slate-400">
@@ -155,25 +165,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          {/* Notas para Revisão */}
-          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Pendentes / Revisão
-            </span>
-            <div className={`text-2xl font-bold font-mono tabular-nums ${pendingNotesCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'}`}>
+          {/* Notas para Revisão (Âmbar) */}
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+                Pendentes / Revisão
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <AlertTriangle className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className={`text-2xl font-extrabold font-mono tabular-nums ${pendingNotesCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'}`}>
               {pendingNotesCount}
             </div>
             <div className="text-[11px] text-slate-400">
-              {pendingNotesCount > 0 ? 'Requerem verificação manual' : 'Nenhuma pendência pendente'}
+              {pendingNotesCount > 0 ? 'Requerem verificação' : 'Nenhuma pendência'}
             </div>
           </div>
 
-          {/* Clientes Cadastrados */}
-          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Clientes ativos
-            </span>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+          {/* Clientes Cadastrados (Roxo / Violeta) */}
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-purple-800 dark:text-purple-300">
+                Clientes ativos
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <Users className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-2xl font-extrabold text-purple-700 dark:text-purple-300 font-mono tabular-nums">
               {clientsCount}
             </div>
             <div className="text-[11px] text-slate-400">
@@ -199,9 +219,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <button
               id="btn-dash-open-taxes-tab"
               onClick={() => onNavigateTab('taxes')}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/80 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors cursor-pointer"
             >
-              <Calculator className="w-3.5 h-3.5 text-slate-500" />
+              <Calculator className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>Calcular impostos</span>
             </button>
 
@@ -222,14 +242,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div
                 key={group.monthKey}
                 onClick={() => onNavigateTab('monthly')}
-                className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer group"
+                className={`p-4 rounded-xl border transition-all cursor-pointer group ${
+                  idx === 0
+                    ? 'bg-gradient-to-br from-blue-50/50 to-white dark:from-slate-900 dark:to-slate-900/90 border-blue-200 dark:border-blue-900/60 shadow-xs'
+                    : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold text-xs text-slate-900 dark:text-slate-100">
                     {group.label}
                   </span>
                   {idx === 0 && (
-                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/80 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
                       Mais recente
                     </span>
                   )}
@@ -334,17 +358,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <button
                             id={`btn-dash-view-pdf-${item.id}`}
                             onClick={() => setSelectedPdfToView(item)}
-                            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
                             title="Visualizar PDF"
                           >
-                            <FileText className="w-3 h-3" /> PDF
+                            <FileText className="w-3 h-3 text-rose-500" /> PDF
                           </button>
                           <button
                             id={`btn-dash-view-detail-${item.id}`}
                             onClick={() => onViewInvoiceDetails(item)}
-                            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
                           >
-                            <Eye className="w-3 h-3" /> Detalhes
+                            <Eye className="w-3 h-3 text-blue-500" /> Detalhes
                           </button>
                         </div>
                       </td>

@@ -8,6 +8,8 @@ import {
   Building2,
   X,
   AlertCircle,
+  FileText,
+  TrendingUp,
 } from 'lucide-react';
 import { Client, HistoryRecord } from '../types';
 import { db } from '../services/db';
@@ -147,21 +149,26 @@ export const ClientsPage: React.FC = () => {
         <button
           id="btn-add-client-top"
           onClick={openAddModal}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-opacity cursor-pointer shadow-xs self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs shadow-blue-500/25 transition-all cursor-pointer self-start sm:self-auto"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Novo cliente</span>
         </button>
       </div>
 
-      {/* Hero Card com Métricas Consolidadas */}
+      {/* Hero Card com Métricas Consolidadas e Ícones Coloridos */}
       <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Clientes cadastrados
-            </span>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-purple-800 dark:text-purple-300">
+                Clientes cadastrados
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <Users className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-2xl font-extrabold text-purple-700 dark:text-purple-300 font-mono tabular-nums">
               {clients.length}
             </div>
             <div className="text-[11px] text-slate-400">
@@ -169,11 +176,16 @@ export const ClientsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Notas vinculadas
-            </span>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-blue-800 dark:text-blue-300">
+                Notas vinculadas
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <FileText className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-2xl font-extrabold text-blue-700 dark:text-blue-300 font-mono tabular-nums">
               {clients.reduce((acc, c) => acc + (c.notesCount || 0), 0)}
             </div>
             <div className="text-[11px] text-slate-400">
@@ -181,11 +193,16 @@ export const ClientsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Faturamento acumulado
-            </span>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                Faturamento acumulado
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
               {formatCurrency(
                 clients.reduce((acc, c) => acc + getClientTotalValue(c), 0)
               )}
@@ -233,17 +250,25 @@ export const ClientsPage: React.FC = () => {
               {filteredClients.length > 0 ? (
                 filteredClients.map((client) => {
                   const totalVal = getClientTotalValue(client);
+                  const initial = client.customName.charAt(0).toUpperCase() || 'C';
                   return (
                     <tr key={client.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors">
                       <td className="py-3 px-4">
-                        <span className="font-semibold text-slate-900 dark:text-slate-100 block">
-                          {client.customName}
-                        </span>
-                        {client.nomeFantasia && client.nomeFantasia !== client.customName && (
-                          <span className="text-[11px] text-slate-400 block">
-                            {client.nomeFantasia}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200/60 dark:border-blue-900/60">
+                            {initial}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-semibold text-slate-900 dark:text-slate-100 block truncate">
+                              {client.customName}
+                            </span>
+                            {client.nomeFantasia && client.nomeFantasia !== client.customName && (
+                              <span className="text-[11px] text-slate-400 block truncate">
+                                {client.nomeFantasia}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </td>
                       <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300 text-[11px]">
                         {client.cnpj}
@@ -252,11 +277,11 @@ export const ClientsPage: React.FC = () => {
                         {client.razaoSocial || '-'}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className="font-mono text-xs text-slate-600 dark:text-slate-400">
+                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                           {client.notesCount || 0}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-medium text-slate-900 dark:text-slate-100 tabular-nums">
+                      <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                         {formatCurrency(totalVal)}
                       </td>
                       <td className="py-3 px-4 text-right">

@@ -89,17 +89,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className="w-64 bg-slate-950 text-slate-200 flex flex-col shrink-0 border-r border-slate-800/80 select-none">
-      {/* Brand Header Minimalista */}
+      {/* Brand Header com Cor */}
       <div className="p-5 border-b border-slate-800/80">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-200">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-blue-500/25">
             <FileCheck2 className="w-4 h-4" />
           </div>
           <div>
             <h1 className="font-bold text-sm tracking-tight text-white leading-tight">
               Organizador NF
             </h1>
-            <p className="text-[11px] text-slate-400">Gestão e Fiscal</p>
+            <p className="text-[11px] text-blue-400 font-medium">Gestão & Fiscal</p>
           </div>
         </div>
       </div>
@@ -115,18 +115,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={item.id}
               id={`nav-btn-${item.id}`}
               onClick={() => onSelectTab(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-slate-800 text-white font-semibold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  ? 'bg-blue-600 text-white font-semibold shadow-sm shadow-blue-500/30'
+                  : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900/90'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <Icon
+                  className={`w-4 h-4 transition-colors ${
+                    isActive
+                      ? 'text-white'
+                      : item.id === 'taxes'
+                      ? 'text-amber-400'
+                      : item.id === 'dashboard'
+                      ? 'text-blue-400'
+                      : item.id === 'process'
+                      ? 'text-emerald-400'
+                      : 'text-slate-400'
+                  }`}
+                />
                 <span>{item.label}</span>
               </div>
               {item.badge && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono text-slate-400 bg-slate-900">
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : item.badge.color || 'bg-slate-800 text-slate-300'
+                  }`}
+                >
                   {item.badge.text}
                 </span>
               )}

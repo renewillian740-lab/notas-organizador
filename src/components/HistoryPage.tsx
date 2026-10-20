@@ -21,6 +21,8 @@ import {
   List,
   ChevronDown,
   ChevronUp,
+  DollarSign,
+  TrendingUp,
 } from 'lucide-react';
 import { HistoryRecord } from '../types';
 import { db } from '../services/db';
@@ -258,7 +260,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
     switch (status) {
       case 'PROCESSADO':
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             Processado
           </span>
@@ -266,14 +268,14 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
       case 'REVISAR':
       case 'PENDENTE':
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
             Revisão
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
             Erro
           </span>
@@ -330,25 +332,25 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
           <button
             id={`btn-edit-history-${item.id}`}
             onClick={() => handleOpenEdit(item)}
-            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
+            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
             title="Editar cliente ou dados"
           >
-            <Edit2 className="w-3 h-3" /> Editar
+            <Edit2 className="w-3 h-3 text-slate-400" /> Editar
           </button>
           <button
             id={`btn-view-pdf-history-${item.id}`}
             onClick={() => setSelectedPdfToView(item)}
-            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
+            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
             title="Visualizar PDF"
           >
-            <FileText className="w-3 h-3" /> PDF
+            <FileText className="w-3 h-3 text-rose-500" /> PDF
           </button>
           <button
             id={`btn-view-history-detail-${item.id}`}
             onClick={() => onViewInvoiceDetails(item)}
-            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
+            className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
           >
-            <Eye className="w-3 h-3" /> Detalhes
+            <Eye className="w-3 h-3 text-blue-500" /> Detalhes
           </button>
         </div>
       </td>
@@ -375,7 +377,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
               id="btn-reprocess-fix-history"
               onClick={handleAutoFixAll}
               disabled={fixing || history.length === 0}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 transition-colors disabled:opacity-40 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition-colors disabled:opacity-40 cursor-pointer shadow-xs"
               title="Reidentificar automaticamente tomadores"
             >
               <Sparkles className={`w-3.5 h-3.5 ${fixing ? 'animate-spin' : ''}`} />
@@ -435,14 +437,19 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
         </div>
       )}
 
-      {/* Hero Card com Métricas Consolidadas */}
+      {/* Hero Card com Métricas e Ícones Coloridos */}
       <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Total filtrado
-            </span>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-blue-800 dark:text-blue-300">
+                Total filtrado
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <FileText className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-2xl font-extrabold text-blue-700 dark:text-blue-300 font-mono tabular-nums">
               {filteredHistory.length} {filteredHistory.length === 1 ? 'nota' : 'notas'}
             </div>
             <div className="text-[11px] text-slate-400">
@@ -450,11 +457,16 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
             </div>
           </div>
 
-          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Faturamento filtrado
-            </span>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                Faturamento filtrado
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <DollarSign className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
               {formatBRL(totalFilteredValue)}
             </div>
             <div className="text-[11px] text-slate-400">
@@ -462,11 +474,16 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
             </div>
           </div>
 
-          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Ticket médio
-            </span>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums">
+          <div className="pt-4 sm:pt-0 sm:pl-6 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-purple-800 dark:text-purple-300">
+                Ticket médio
+              </span>
+              <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-2xl font-extrabold text-purple-700 dark:text-purple-300 font-mono tabular-nums">
               {formatBRL(averageFilteredValue)}
             </div>
             <div className="text-[11px] text-slate-400">
